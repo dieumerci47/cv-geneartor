@@ -1,22 +1,14 @@
+import { useState } from "react";
 import "./App.css";
-import { Button } from "./components/ui/button";
-import { supabase } from "./supabase/supabase";
+import HomePage from "./components/HomePage";
+import Login from "./components/Login";
+import Routeur from "./routes/routes";
 
 function App() {
-  const Test = async () => {
-    const { data, error } = await supabase.from("user").select("*");
-    if (error) {
-      console.log(error);
-    } else {
-      console.log(data);
-    }
-  };
+  // const [showLogin, setShowLogin] = useState(false);
   return (
     <>
-      <button onClick={Test} className="bg-black text-3xl text-white">
-        HELLO
-      </button>
-      <Button className="bg-red-800">UI</Button>
+      <Routeur />
     </>
   );
 }
