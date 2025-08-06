@@ -19,7 +19,7 @@ const Index = () => {
     <>
       <div className="">
         <div className=" ">
-          <div className="">
+          {/*          <div className="">
             <div>
               <button
                 className=""
@@ -40,8 +40,8 @@ const Index = () => {
                 Se connecter
               </button>
             </div>
-          </div>
-          {SignInModal && <SignIn />}
+          </div> */}
+          {SignInModal && <SignIn Handle={HandleModal} />}
           {SignUpModal && <SignUp Handle={HandleModal} />}
         </div>
       </div>

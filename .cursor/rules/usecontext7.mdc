@@ -1,0 +1,14 @@
+---
+alwaysApply: true
+---
+
+always use pnpm
+use context7
+use shadcn ui
+use shadcn ui react
+use Kibo-ui
+use Shsf ui
+
+use Shadcn/ui extension
+
+use Radix ui

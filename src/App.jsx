@@ -1,7 +1,6 @@
-import { useState } from "react";
+// import { useState } from "react";
 import "./App.css";
-import HomePage from "./components/HomePage";
-import Login from "./components/Login";
+
 import Routeur from "./routes/routes";
 
 function App() {
