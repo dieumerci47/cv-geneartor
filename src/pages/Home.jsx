@@ -1,3 +1,4 @@
+import React from "react";
 import { Button } from "../components/ui/button";
 import {
   Card,
@@ -11,28 +12,49 @@ import {
 
 const cvTemplates = [
   {
-    name: "Moderne Minimaliste",
-    description:
-      "Un template épuré et professionnel, idéal pour tous secteurs.",
-    image: "/cv-template-1.png",
+    name: "Template 1",
+    type: "FORMAT EUROPÉEN",
+    image:
+      "https://cdn-blog.novoresume.com/articles/what-is-a-cv/what-is-a-cv.png",
   },
   {
-    name: "Créatif",
-    description: "Un design coloré pour les métiers créatifs et artistiques.",
-    image: "/cv-template-2.png",
+    name: "Template 1",
+    type: "FORMAT EUROPÉEN",
+    image:
+      "https://cdn-blog.novoresume.com/articles/what-is-a-cv/what-is-a-cv.png",
   },
   {
-    name: "Classique",
-    description: "Un format traditionnel, sobre et efficace.",
-    image: "/cv-template-3.png",
+    name: "Template 1",
+    type: "FORMAT EUROPÉEN",
+    image:
+      "https://cdn-blog.novoresume.com/articles/what-is-a-cv/what-is-a-cv.png",
+  },
+  {
+    name: "Template 2",
+    type: "CLASSIQUE",
+    image:
+      "https://cdn-blog.novoresume.com/articles/what-is-a-cv/what-is-a-cv.png",
+  },
+  {
+    name: "Template 3",
+    type: "MODERNE",
+    image:
+      "https://cdn-blog.novoresume.com/articles/what-is-a-cv/what-is-a-cv.png",
+  },
+  {
+    name: "Template 4",
+    type: "CRÉATIF",
+    image:
+      "https://tse4.mm.bing.net/th/id/OIP.WI2riEc8eubor1AQUiUAPgHaI5?rs=1&pid=ImgDetMain&o=7&rm=3",
   },
 ];
 
-const stats = [
-  { value: "5 000 000+", label: "cv créés" },
-  { value: "140 000", label: "nouveaux CV chaque mois" },
-  { value: "99%", label: "de satisfaction utilisateur" },
-];
+const badgeColors = {
+  "FORMAT EUROPÉEN": "bg-[#4B4EDB]",
+  CLASSIQUE: "bg-blue-700",
+  MODERNE: "bg-green-600",
+  CRÉATIF: "bg-pink-600",
+};
 
 const Home = () => {
   return (
@@ -51,12 +73,9 @@ const Home = () => {
             un modèle, personnalisez son design puis optimisez-le avec{" "}
             <b>l'intelligence artificielle</b>.<br />
             Votre CV pdf <b>100% compatible ATS</b> est prêt.
-            <br />
-            {/* Parcourez ensuite des offres d’emploi ciblées, postulez et organisez
-            vos candidatures. */}
           </p>
           <Button className="px-8 py-4 text-lg mb-8">Commencer</Button>
-          <div className="flex gap-8 mt-8 flex-wrap">
+          {/*          <div className="flex gap-8 mt-8 flex-wrap">
             {stats.map((stat, idx) => (
               <div key={idx} className="flex flex-col items-center">
                 <span className="text-2xl md:text-3xl font-extrabold text-pink-500">
@@ -67,7 +86,7 @@ const Home = () => {
                 </span>
               </div>
             ))}
-          </div>
+          </div> */}
         </div>
         <div className="flex-1 flex items-center justify-center">
           <img
@@ -79,33 +98,49 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Section Exemples de CV */}
+      {/* Section Exemples de CV - Hover only */}
       <section className="w-full max-w-6xl mx-auto mb-20">
-        <h3 className="text-2xl font-bold text-blue-700 mb-8 text-left">
+        <h3 className="text-2xl font-bold text-blue-700 mb-8 text-center">
           Exemples de templates de CV
         </h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {cvTemplates.map((tpl, idx) => (
-            <Card
-              key={idx}
-              className="flex flex-col h-full shadow-lg hover:scale-[1.025] transition-transform"
-            >
-              <CardHeader>
-                <CardTitle>{tpl.name}</CardTitle>
-                <CardDescription>{tpl.description}</CardDescription>
-              </CardHeader>
-              <CardContent className="flex-1 flex items-center justify-center">
+        <div className="relative flex flex-col items-center">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 w-full pt-3">
+            {cvTemplates.map((tpl, idx) => (
+              <div
+                key={idx}
+                className={`group transition-all duration-300 cursor-pointer rounded-2xl border-4 flex flex-col items-center p-0 aspect-[3/4] relative overflow-visible border-transparent shadow-md bg-white/80 hover:scale-105 hover:shadow-2xl hover:border-blue-500`}
+                style={{ minHeight: 320, maxWidth: 340 }}
+              >
+                {/* Badge type du CV, bien AU-DESSUS de la carte */}
+                <div
+                  className={`absolute -top-8 left-1/2 -translate-x-1/2 px-7 py-2 rounded-2xl text-white font-extrabold text-lg shadow-lg select-none text-center whitespace-pre-line ${
+                    tpl.type === "FORMAT EUROPÉEN"
+                      ? "bg-[#4B4EDB]"
+                      : badgeColors[tpl.type] || "bg-[#4B4EDB]"
+                  }`}
+                  style={{
+                    zIndex: 10,
+                    minWidth: 170,
+                    boxShadow: "0 4px 16px 0 rgba(75,78,219,0.10)",
+                    fontSize: 15,
+                    lineHeight: 1.1,
+                  }}
+                >
+                  {tpl.type}
+                </div>
                 <img
                   src={tpl.image}
                   alt={tpl.name}
-                  className="rounded-md object-cover w-full h-40 border border-blue-100 bg-white"
+                  className="h-full w-full object-cover rounded-xl"
+                  style={{ minHeight: 320, minWidth: 220 }}
                 />
-              </CardContent>
-              <CardFooter className="flex justify-end">
-                <Button variant="outline">Voir le template</Button>
-              </CardFooter>
-            </Card>
-          ))}
+                {/* Bouton visible uniquement au hover */}
+                <Button className="absolute bottom-6 left-1/2 -translate-x-1/2 px-8 py-3 text-base font-bold bg-pink-400 hover:bg-pink-500 text-white shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none group-hover:pointer-events-auto">
+                  CRÉER MON CV
+                </Button>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 

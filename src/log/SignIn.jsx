@@ -2,12 +2,14 @@ import { useState } from "react";
 import { Button } from "../components/ui/button";
 import { supabase } from "../supabase/supabase";
 import { useNavigate } from "react-router-dom";
+// import { useEffect } from "react";
 const SignIn = ({ Handle }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const navigate = useNavigate("/");
+
   const handleSignIn = async (e) => {
     e.preventDefault();
     setLoading(true);
