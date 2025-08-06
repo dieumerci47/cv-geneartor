@@ -3,6 +3,7 @@ import Index from "@/log/Index";
 import SignIn from "@/log/SignIn";
 import SignUp from "@/log/SignUp";
 import Home from "@/pages/Home";
+import Editor from "@/pages/Editor";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 const Routeur = () => {
   return (
@@ -13,6 +14,7 @@ const Routeur = () => {
         </>
         <Routes>
           <Route path="/" element={<Home />} />
+          <Route path="/editor" element={<Editor />} />
           <Route path="/login" element={<Index />}>
             {/*     <Route path="signin" element={<SignIn />} />
             <Route path="signup" element={<SignUp />} /> */}

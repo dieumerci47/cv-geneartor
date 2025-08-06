@@ -1,5 +1,6 @@
 import React from "react";
 import { Button } from "../components/ui/button";
+import { useNavigate } from "react-router-dom";
 import {
   Card,
   CardHeader,
@@ -57,6 +58,7 @@ const badgeColors = {
 };
 
 const Home = () => {
+  const navigate = useNavigate();
   return (
     <div className="min-h-screen flex flex-col justify-between bg-gradient-to-br from-[#e3e6f5] via-[#b3d0f7] to-[#eec6e6]">
       {/* Section d'accroche façon CVDesignR */}
@@ -135,7 +137,12 @@ const Home = () => {
                   style={{ minHeight: 320, minWidth: 220 }}
                 />
                 {/* Bouton visible uniquement au hover */}
-                <Button className="absolute bottom-6 left-1/2 -translate-x-1/2 px-8 py-3 text-base font-bold bg-pink-400 hover:bg-pink-500 text-white shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none group-hover:pointer-events-auto">
+                <Button
+                  className="absolute bottom-6 left-1/2 -translate-x-1/2 px-8 py-3 text-base font-bold bg-pink-400 hover:bg-pink-500 text-white shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none group-hover:pointer-events-auto"
+                  onClick={() =>
+                    navigate("/editor", { state: { templateIdx: idx } })
+                  }
+                >
                   CRÉER MON CV
                 </Button>
               </div>
