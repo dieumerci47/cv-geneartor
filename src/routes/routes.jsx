@@ -1,10 +1,11 @@
-import Navbar from "@/components/Navbar";
+// import Navbar from "@/components/Navbar";
 import Index from "@/log/Index";
 import SignIn from "@/log/SignIn";
 import SignUp from "@/log/SignUp";
 import Home from "@/pages/Home";
 import Editor from "@/pages/Editor";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import Navbar from "./../components/Navbar";
 const Routeur = () => {
   return (
     <>

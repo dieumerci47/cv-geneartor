@@ -1,163 +1,290 @@
 import React, { useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+// import { useLocation } from "react-router-dom";
+import {
+  Accordion,
+  AccordionItem,
+  AccordionTrigger,
+  AccordionContent,
+} from "../components/ui/accordion";
 import { Input } from "../components/ui/input";
 import { Button } from "../components/ui/button";
+// import { Textarea } from "../components/ui/textarea";
+// import { Switch } from "../components/ui/switch";
+// import { Avatar, AvatarImage, AvatarFallback } from "../components/ui/avatar";
+import { DndContext, closestCenter } from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import PersonalInfoSection from "../components/PersonalInfoSection";
+import {
+  defaultFields,
+  optionalFields,
+} from "../components/personalInfoFields";
+import LivePreviewCV from "../components/LivePreviewCV";
 
-const cvTemplates = [
-  {
-    name: "Template 1",
-    type: "FORMAT EUROPÉEN",
-    image:
-      "https://cdn-blog.novoresume.com/articles/what-is-a-cv/what-is-a-cv.png",
-  },
-  {
-    name: "Template 1",
-    type: "FORMAT EUROPÉEN",
-    image:
-      "https://cdn-blog.novoresume.com/articles/what-is-a-cv/what-is-a-cv.png",
-  },
-  {
-    name: "Template 1",
-    type: "CLASSIQUE",
-    image:
-      "https://cdn-blog.novoresume.com/articles/what-is-a-cv/what-is-a-cv.png",
-  },
-  {
-    name: "Template 1",
-    type: "MODERNE",
-    image:
-      "https://cdn-blog.novoresume.com/articles/what-is-a-cv/what-is-a-cv.png",
-  },
-  {
-    name: "Template 2",
-    type: "MODERNE",
-    image:
-      "https://tse4.mm.bing.net/th/id/OIP.WI2riEc8eubor1AQUiUAPgHaI5?rs=1&pid=ImgDetMain&o=7&rm=3",
-  },
-  {
-    name: "Template 3",
-    type: "CRÉATIF",
-    image:
-      "https://cdn.cvdesignr.com/static/landing/uploads/63df8153-3985-43e0-a146-379c3c8b6d53-3.png",
-  },
-  {
-    name: "Template 4",
-    type: "CLASSIQUE",
-    image:
-      "https://cdn.cvdesignr.com/static/landing/uploads/63df8153-3985-43e0-a146-379c3c8b6d53-4.png",
-  },
+const ALL_SECTIONS = [
+  { key: "personal", label: "Informations personnelles" },
+  { key: "profile", label: "Profil" },
+  { key: "education", label: "Formation" },
+  { key: "experience", label: "Expérience professionnelle" },
+  { key: "skills", label: "Compétences" },
+  { key: "languages", label: "Langues" },
+  { key: "signature", label: "Signature" },
+  { key: "internship", label: "Stage" },
+  { key: "certificate", label: "Certificat" },
 ];
 
+// Sortable Accordion Item
+function SortableAccordionItem({ id, children }) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 10 : 0,
+    background: isDragging ? "#f3f4f6" : undefined,
+  };
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      className="mb-2 rounded-xl border border-blue-100 bg-white/90"
+    >
+      <div
+        {...listeners}
+        className="cursor-grab px-2 py-1 text-gray-400 inline-block align-middle select-none"
+      >
+        <span className="mr-2">⋮⋮</span>
+      </div>
+      {children}
+    </div>
+  );
+}
+
 const Editor = () => {
-  const location = useLocation();
-  const navigate = useNavigate();
-  const templateIdx = location.state?.templateIdx ?? 0;
-  const tpl = cvTemplates[templateIdx];
+  // const location = useLocation();
+  // const navigate = useNavigate();
+  // const templateIdx = location.state?.templateIdx ?? 0;
+  // const tpl = ... (tu peux réutiliser la preview à gauche si tu veux)
 
-  // Form state
-  const [form, setForm] = useState({
-    prenom: "",
-    nom: "",
-    titre: "",
-    email: "",
-    telephone: "",
-    profil: "",
-  });
+  // State des sections actives et disponibles
+  const [sections, setSections] = useState([
+    "personal",
+    "profile",
+    "education",
+    "experience",
+    "skills",
+    "languages",
+    "signature",
+  ]);
+  const [available, setAvailable] = useState(
+    ALL_SECTIONS.filter((s) => !sections.includes(s.key))
+  );
+  const [open, setOpen] = useState("personal");
 
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+  // State pour Informations personnelles (contrôlé)
+  const [personalFields, setPersonalFields] = useState(defaultFields);
+  const [personalAvailable, setPersonalAvailable] = useState(optionalFields);
+  const [personalValues, setPersonalValues] = useState({});
+  const [personalPhoto, setPersonalPhoto] = useState(null);
+
+  // State pour le profil
+  const [profileValue, setProfileValue] = useState("");
+
+  // Handlers pour PersonalInfoSection
+  const handlePersonalChange = (key, value) => {
+    setPersonalValues((v) => ({ ...v, [key]: value }));
+  };
+  const handlePersonalPhotoChange = (e) => {
+    if (e.target.files && e.target.files[0]) {
+      setPersonalPhoto(URL.createObjectURL(e.target.files[0]));
+    }
+  };
+  const handleAddPersonalField = (field) => {
+    setPersonalFields([...personalFields, field]);
+    setPersonalAvailable(personalAvailable.filter((f) => f.key !== field.key));
+  };
+  const handleRemovePersonalField = (key) => {
+    if (defaultFields.find((f) => f.key === key)) return;
+    const field = personalFields.find((f) => f.key === key);
+    setPersonalFields(personalFields.filter((f) => f.key !== key));
+    setPersonalAvailable([...personalAvailable, field]);
+    setPersonalValues((v) => {
+      const newV = { ...v };
+      delete newV[key];
+      return newV;
+    });
   };
 
-  if (!tpl) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen">
-        <h2 className="text-2xl font-bold mb-4">Aucun template sélectionné</h2>
-        <button
-          className="text-blue-600 underline"
-          onClick={() => navigate("/")}
-        >
-          Retour à l'accueil
-        </button>
-      </div>
-    );
+  // Drag & drop
+  function handleDragEnd(event) {
+    const { active, over } = event;
+    if (active.id !== over?.id) {
+      setSections((items) => {
+        const oldIndex = items.indexOf(active.id);
+        const newIndex = items.indexOf(over.id);
+        return arrayMove(items, oldIndex, newIndex);
+      });
+    }
   }
+
+  // Ajout/suppression de section
+  function addSection(key) {
+    setSections([...sections, key]);
+    setAvailable(available.filter((s) => s.key !== key));
+    setOpen(key);
+  }
+  function removeSection(key) {
+    setSections(sections.filter((s) => s !== key));
+    setAvailable([...available, ALL_SECTIONS.find((s) => s.key === key)]);
+    setOpen(sections[0] || "");
+  }
+
+  // Form state pour Informations personnelles (exemple complet)
+  /*   const [personal, setPersonal] = useState({
+    photo: "",
+    prenom: "",
+    nom: "",
+    emploi: "",
+    titreCV: false,
+    email: "",
+    telephone: "",
+    adresse: "",
+    codePostal: "",
+    ville: "",
+    naissance: "",
+    lieu: "",
+    sexe: "",
+    nationalites: "",
+    linkedin: "",
+  }); */
+
+  // ... tu peux ajouter les states pour les autres sections ici ...
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-[#e3e6f5] via-[#b3d0f7] to-[#eec6e6] px-2 py-8">
-      <div className="w-full max-w-5xl bg-white/80 rounded-xl shadow-lg flex flex-col md:flex-row gap-8 p-6 md:p-10">
-        {/* Preview du template à gauche */}
-        <div className="flex-1 flex flex-col items-center justify-start">
-          <h2 className="text-lg font-semibold mb-2 text-blue-700">
-            Aperçu du template
-          </h2>
-          <img
-            src={tpl.image}
-            alt={tpl.name}
-            className="rounded-xl shadow-md border border-blue-100 bg-white max-w-xs w-full mb-4"
-            style={{ minHeight: 220, minWidth: 180 }}
+      <div className="w-full max-w-6xl bg-white/80 rounded-xl shadow-lg flex flex-row gap-8 p-4 md:p-8">
+        {/* Preview à gauche */}
+        <div className="w-1/2 flex items-start justify-center">
+          <LivePreviewCV
+            personal={{
+              ...personalValues,
+              photo: personalPhoto,
+              profil: profileValue,
+            }}
           />
-          <span className="text-sm font-bold text-gray-600">{tpl.type}</span>
         </div>
-        {/* Formulaire d'édition à droite */}
-        <form
-          className="flex-1 flex flex-col gap-4"
-          onSubmit={(e) => e.preventDefault()}
-        >
-          <h2 className="text-xl font-bold mb-2 text-gray-800">
-            Éditez votre CV
-          </h2>
-          <div className="flex gap-2">
-            <Input
-              name="prenom"
-              placeholder="Prénom"
-              value={form.prenom}
-              onChange={handleChange}
-              className="flex-1"
-              required
-            />
-            <Input
-              name="nom"
-              placeholder="Nom"
-              value={form.nom}
-              onChange={handleChange}
-              className="flex-1"
-              required
-            />
+        {/* Formulaire à droite */}
+        <div className="w-1/2 flex flex-col gap-6">
+          <DndContext
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext
+              items={sections}
+              strategy={verticalListSortingStrategy}
+            >
+              <Accordion
+                type="single"
+                collapsible
+                value={open}
+                onValueChange={setOpen}
+              >
+                {sections.map((key) => {
+                  const section = ALL_SECTIONS.find((s) => s.key === key);
+                  return (
+                    <SortableAccordionItem id={key} key={key}>
+                      <AccordionItem value={key}>
+                        <AccordionTrigger className="text-lg font-bold flex items-center justify-between">
+                          {section.label}
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              removeSection(key);
+                            }}
+                          >
+                            ×
+                          </Button>
+                        </AccordionTrigger>
+                        <AccordionContent>
+                          {key === "personal" && (
+                            <PersonalInfoSection
+                              fields={personalFields}
+                              available={personalAvailable}
+                              values={personalValues}
+                              photo={personalPhoto}
+                              onChange={handlePersonalChange}
+                              onPhotoChange={handlePersonalPhotoChange}
+                              onAddField={handleAddPersonalField}
+                              onRemoveField={handleRemovePersonalField}
+                            />
+                          )}
+                          {key === "profile" && (
+                            <div className="space-y-4">
+                              <label className="font-medium">Description</label>
+                              <textarea
+                                className="w-full min-h-[100px] rounded-lg border border-gray-300 p-3 focus:outline-none focus:ring-2 focus:ring-blue-400 bg-violet-50 text-gray-900"
+                                placeholder="Commencez à rédiger ici..."
+                                value={profileValue}
+                                onChange={(e) =>
+                                  setProfileValue(e.target.value)
+                                }
+                              />
+                              <div className="flex justify-end">
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  className="flex items-center gap-2"
+                                >
+                                  <span>✨</span> Suggestions de l'IA
+                                </Button>
+                              </div>
+                            </div>
+                          )}
+                          {key !== "personal" && key !== "profile" && (
+                            <div className="text-gray-400 italic">
+                              Formulaire à venir pour cette section...
+                            </div>
+                          )}
+                        </AccordionContent>
+                      </AccordionItem>
+                    </SortableAccordionItem>
+                  );
+                })}
+              </Accordion>
+            </SortableContext>
+          </DndContext>
+          {/* Liste des sections à ajouter */}
+          <div className="flex flex-wrap gap-2 mt-4">
+            {available.map((s) => (
+              <Button
+                key={s.key}
+                variant="outline"
+                size="sm"
+                onClick={() => addSection(s.key)}
+              >
+                + {s.label}
+              </Button>
+            ))}
           </div>
-          <Input
-            name="titre"
-            placeholder="Titre du poste (ex: Développeur Web)"
-            value={form.titre}
-            onChange={handleChange}
-            required
-          />
-          <Input
-            name="email"
-            placeholder="Email"
-            value={form.email}
-            onChange={handleChange}
-            type="email"
-            required
-          />
-          <Input
-            name="telephone"
-            placeholder="Téléphone"
-            value={form.telephone}
-            onChange={handleChange}
-            type="tel"
-            required
-          />
-          <textarea
-            name="profil"
-            placeholder="Profil (présentez-vous en quelques lignes)"
-            value={form.profil}
-            onChange={handleChange}
-            className="border border-blue-200 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 min-h-[80px]"
-          />
-          <Button type="submit" className="mt-4 w-full">
-            Sauvegarder (à venir)
+          {/* Bouton de téléchargement (à brancher plus tard) */}
+          <Button className="mt-6 w-full bg-indigo-700 hover:bg-indigo-800 text-white font-bold">
+            Télécharger
           </Button>
-        </form>
+        </div>
       </div>
     </div>
   );
