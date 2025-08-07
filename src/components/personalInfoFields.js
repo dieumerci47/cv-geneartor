@@ -13,12 +13,12 @@ export const defaultFields = [
 
 // Champs optionnels
 export const optionalFields = [
-  { key: "lieu", label: "Lieu de naissance", type: "text" },
-  { key: "permis", label: "Permis de conduire", type: "text" },
+  // { key: "lieu", label: "Lieu de naissance", type: "text" },
+  // { key: "permis", label: "Permis de conduire", type: "text" },
   { key: "sexe", label: "Sexe", type: "text" },
   { key: "nationalites", label: "Nationalité", type: "text" },
-  { key: "etatCivil", label: "État civil", type: "text" },
-  { key: "site", label: "Site internet", type: "url" },
+  // { key: "etatCivil", label: "État civil", type: "text" },
+  // { key: "site", label: "Site internet", type: "url" },
   { key: "linkedin", label: "LinkedIn", type: "url" },
   { key: "custom", label: "Champ personnalisé", type: "text" },
 ];

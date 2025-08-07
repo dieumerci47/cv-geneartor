@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-// import { useLocation } from "react-router-dom";
+import { useLocation, useSearchParams } from "react-router-dom";
 import {
   Accordion,
   AccordionItem,
@@ -25,7 +25,16 @@ import {
   optionalFields,
 } from "../components/personalInfoFields";
 import LivePreviewCV from "../components/LivePreviewCV";
-import SignatureModal from "../components/SignatureModal";
+import Template1CV from "../components/templates/Template1CV";
+import Template2CV from "../components/templates/Template2CV";
+import Template3CV from "../components/templates/Template3CV";
+import SignatureModal from "@/components/SignatureModal";
+
+const TEMPLATES = [
+  { label: "Template 1", component: Template1CV },
+  { label: "Template 2", component: Template2CV },
+  { label: "Template 3", component: Template3CV },
+];
 
 const ALL_SECTIONS = [
   { key: "personal", label: "Informations personnelles" },
@@ -107,10 +116,16 @@ function SortableAccordionItem({ id, children }) {
 }
 
 const Editor = () => {
-  // const location = useLocation();
-  // const navigate = useNavigate();
-  // const templateIdx = location.state?.templateIdx ?? 0;
-  // const tpl = ... (tu peux réutiliser la preview à gauche si tu veux)
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
+  // Priorité : query param > state > 0
+  let initialTemplate = 0;
+  const queryTpl = searchParams.get("template");
+  if (queryTpl && !isNaN(Number(queryTpl))) initialTemplate = Number(queryTpl);
+  else if (location.state && typeof location.state.templateIdx === "number")
+    initialTemplate = location.state.templateIdx;
+
+  const [selectedTemplate, setSelectedTemplate] = useState(initialTemplate);
 
   // State des sections actives et disponibles
   const [leftSections, setLeftSections] = useState([
@@ -133,6 +148,7 @@ const Editor = () => {
     RIGHT_SECTIONS.filter((s) => !rightSections.includes(s))
   );
   const [open, setOpen] = useState("personal");
+  // const [selectedTemplate, setSelectedTemplate] = useState(0);
 
   // State pour Informations personnelles (contrôlé)
   const [personalFields, setPersonalFields] = useState(defaultFields);
@@ -453,31 +469,63 @@ const Editor = () => {
 
   // ... tu peux ajouter les states pour les autres sections ici ...
 
+  // Construction de l'objet cvData unique
+  const cvData = {
+    personal: {
+      ...personalValues,
+      photo: personalPhoto,
+    },
+    profile: profileValue,
+    educations,
+    experiences,
+    internships,
+    certificates,
+    skills,
+    languages,
+    interests: [], // à brancher si tu ajoutes la section
+    signature: { image: signature.image },
+  };
+
+  const PreviewComponent =
+    TEMPLATES[selectedTemplate]?.component || LivePreviewCV;
+
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-[#e3e6f5] via-[#b3d0f7] to-[#eec6e6] px-2 py-8">
       <div className="w-full max-w-6xl bg-white/80 rounded-xl shadow-lg flex flex-row gap-8 p-4 md:p-8">
-        {/* Preview à gauche */}
-        <div className="w-1/2 flex items-start justify-center">
-          <LivePreviewCV
-            personal={{
-              ...personalValues,
-              photo: personalPhoto,
-              profil: profileValue,
-            }}
+        {/* Preview à gauche : sticky sur desktop, même hauteur que le scroll */}
+        <div className="w-1/2 hidden md:flex items-start justify-center">
+          <div className="sticky top-8 h-[calc(100vh-64px)] max-h-[calc(100vh-64px)] flex items-start justify-center overflow-y-auto">
+            <PreviewComponent
+              cvData={cvData}
+              leftSections={leftSections}
+              rightSections={rightSections}
+            />
+          </div>
+        </div>
+        {/* Preview mobile (en haut, non sticky) */}
+        <div className="w-full md:hidden mb-6">
+          <PreviewComponent
+            cvData={cvData}
             leftSections={leftSections}
             rightSections={rightSections}
-            educations={educations}
-            experiences={experiences}
-            skills={skills}
-            languages={languages}
-            certificates={certificates}
-            internships={internships}
-            signature={signature}
-            // TODO: passer les autres states de section
           />
         </div>
-        {/* Formulaire à droite */}
-        <div className="w-1/2 flex flex-col gap-6">
+        {/* Formulaire à droite : scrollable sur desktop */}
+        <div className="w-full md:w-1/2 flex flex-col gap-6 max-h-[calc(100vh-64px)] overflow-y-auto pr-1">
+          {/* Sélecteur de template */}
+          <div className="flex justify-end mb-2">
+            <select
+              className="border rounded px-3 py-2 bg-white shadow"
+              value={selectedTemplate}
+              onChange={(e) => setSelectedTemplate(Number(e.target.value))}
+            >
+              {TEMPLATES.map((tpl, idx) => (
+                <option key={idx} value={idx}>
+                  {tpl.label}
+                </option>
+              ))}
+            </select>
+          </div>
           {/* Accordéon infos personnelles (jamais déplaçable) */}
           <div className="mb-4">
             <Accordion
