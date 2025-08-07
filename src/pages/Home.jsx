@@ -1,6 +1,10 @@
 import React from "react";
 import { Button } from "../components/ui/button";
 import { useNavigate } from "react-router-dom";
+import CV from "../assets/templates/cv1.svg";
+import CV2 from "../assets/templates/cv2.svg";
+import CV3 from "../assets/templates/cv3.svg";
+// import CV from "../assets/templates/cv1.svg";
 import {
   Card,
   CardHeader,
@@ -10,26 +14,24 @@ import {
   CardFooter,
 } from "../components/ui/card";
 // Ajoute une image de CVs dans public/cvs-preview.png ou adapte le chemin
-
+// import { ReactComponent as Cv1 } from "../assets/cv1.svg";
 const cvTemplates = [
   {
     name: "Template 1",
     type: "FORMAT EUROPÉEN",
-    image:
-      "https://cdn-blog.novoresume.com/articles/what-is-a-cv/what-is-a-cv.png",
+    // image: "./../assets/templates/cv1.svg",
+    image: CV,
   },
   {
     name: "Template 1",
     type: "FORMAT EUROPÉEN",
-    image:
-      "https://cdn-blog.novoresume.com/articles/what-is-a-cv/what-is-a-cv.png",
+    image: CV2,
   },
   {
     name: "Template 1",
     type: "FORMAT EUROPÉEN",
-    image:
-      "https://cdn-blog.novoresume.com/articles/what-is-a-cv/what-is-a-cv.png",
-  },
+    image: CV3,
+  } /* 
   {
     name: "Template 2",
     type: "CLASSIQUE",
@@ -47,7 +49,7 @@ const cvTemplates = [
     type: "CRÉATIF",
     image:
       "https://tse4.mm.bing.net/th/id/OIP.WI2riEc8eubor1AQUiUAPgHaI5?rs=1&pid=ImgDetMain&o=7&rm=3",
-  },
+  }, */,
 ];
 
 const badgeColors = {

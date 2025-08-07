@@ -9,10 +9,10 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss()],
-  /*   server: {
+  server: {
     port: 6600,
-    host: "192.168.119.2",
-  }, */
+    host: "192.168.100.254",
+  },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
