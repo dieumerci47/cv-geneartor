@@ -31,6 +31,7 @@ import Template2CV from "../components/templates/Template2CV";
 import Template3CV from "../components/templates/Template3CV";
 import Template4CV from "../components/templates/Template4CV";
 import SignatureModal from "@/components/SignatureModal";
+import { upsertCv } from "@/lib/cvRepository";
 
 const TEMPLATES = [
   { label: "Template 1", component: Template1CV },
@@ -152,6 +153,9 @@ const Editor = () => {
     RIGHT_SECTIONS.filter((s) => !rightSections.includes(s))
   );
   const [open, setOpen] = useState("personal");
+  const [saving, setSaving] = useState(false);
+  const [cvId, setCvId] = useState(null);
+  const [cvTitle, setCvTitle] = useState("");
   // const [selectedTemplate, setSelectedTemplate] = useState(0);
 
   // State pour Informations personnelles (contrôlé)
@@ -564,19 +568,50 @@ const Editor = () => {
         {/* Sur mobile, on n'affiche que le formulaire. La prévisualisation s'ouvre via un bouton flottant. */}
         {/* Formulaire à droite : scrollable sur desktop, style hackathon */}
         <div className="w-full md:w-1/2 flex flex-col gap-8 max-h-[calc(100vh-64px)] overflow-y-auto pr-1 bg-gradient-to-br from-white/80 via-blue-50 to-pink-50 rounded-2xl shadow-xl p-4 md:p-8 border border-blue-100">
-          {/* Sélecteur de template */}
-          <div className="flex justify-end mb-2">
-            <select
-              className="border rounded px-3 py-2 bg-white shadow focus:ring-2 focus:ring-blue-400 text-base font-semibold"
-              value={selectedTemplate}
-              onChange={(e) => setSelectedTemplate(Number(e.target.value))}
-            >
-              {TEMPLATES.map((tpl, idx) => (
-                <option key={idx} value={idx}>
-                  {tpl.label}
-                </option>
-              ))}
-            </select>
+          {/* En-tête: titre, template, sauvegarde */}
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-2">
+            <input
+              className="flex-1 border rounded px-3 py-2 bg-white shadow focus:ring-2 focus:ring-blue-400 text-base"
+              placeholder="Titre du CV (ex: Développeur Frontend)"
+              value={cvTitle}
+              onChange={(e) => setCvTitle(e.target.value)}
+            />
+            <div className="flex items-center gap-2">
+              <select
+                className="border rounded px-3 py-2 bg-white shadow focus:ring-2 focus:ring-blue-400 text-base font-semibold"
+                value={selectedTemplate}
+                onChange={(e) => setSelectedTemplate(Number(e.target.value))}
+              >
+                {TEMPLATES.map((tpl, idx) => (
+                  <option key={idx} value={idx}>
+                    {tpl.label}
+                  </option>
+                ))}
+              </select>
+              <Button
+                disabled={saving}
+                onClick={async () => {
+                  try {
+                    setSaving(true);
+                    const row = await upsertCv({
+                      id: cvId || undefined,
+                      title: cvTitle || "Mon CV",
+                      template: String(selectedTemplate),
+                      data: cvData,
+                    });
+                    setCvId(row.id);
+                  } catch (e) {
+                    console.error(e);
+                    alert("Erreur lors de la sauvegarde");
+                  } finally {
+                    setSaving(false);
+                  }
+                }}
+                className="bg-gradient-to-r from-emerald-500 to-blue-500 text-white font-bold px-4 py-2 rounded shadow"
+              >
+                {saving ? "Sauvegarde..." : "Sauvegarder"}
+              </Button>
+            </div>
           </div>
           {/* Accordéon infos personnelles (jamais déplaçable, mais même style visuel) */}
           <div className="mb-4">

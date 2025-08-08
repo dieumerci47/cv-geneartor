@@ -79,18 +79,6 @@ const Home = () => {
             Votre CV pdf <b>100% compatible ATS</b> est prêt.
           </p>
           <Button className="px-8 py-4 text-lg mb-8">Commencer</Button>
-          {/*          <div className="flex gap-8 mt-8 flex-wrap">
-            {stats.map((stat, idx) => (
-              <div key={idx} className="flex flex-col items-center">
-                <span className="text-2xl md:text-3xl font-extrabold text-pink-500">
-                  {stat.value}
-                </span>
-                <span className="text-base font-semibold text-gray-800 text-center">
-                  {stat.label}
-                </span>
-              </div>
-            ))}
-          </div> */}
         </div>
         <div className="flex-1 flex items-center justify-center">
           <img
