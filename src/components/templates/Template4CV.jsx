@@ -1,4 +1,7 @@
 import React from "react";
+// Template4CV
+
+//import React from "react";
 
 // Template 4 — Mise en page inspirée du PDF fourni
 // En-tête: grand nom, coordonnées avec icônes, photo ronde à droite, paragraphe de profil.

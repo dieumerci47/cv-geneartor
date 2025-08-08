@@ -52,13 +52,13 @@ const cvTemplates = [
   }, */,
 ];
 
-const badgeColors = {
+/* const badgeColors = {
   "FORMAT EUROPÉEN": "bg-[#4B4EDB]",
   CLASSIQUE: "bg-blue-700",
   MODERNE: "bg-green-600",
   CRÉATIF: "bg-pink-600",
 };
-
+ */
 const Home = () => {
   const navigate = useNavigate();
   return (
@@ -104,7 +104,7 @@ const Home = () => {
                 style={{ minHeight: 320, maxWidth: 340 }}
               >
                 {/* Badge type du CV, bien AU-DESSUS de la carte */}
-                <div
+                {/*    <div
                   className={`absolute -top-8 left-1/2 -translate-x-1/2 px-7 py-2 rounded-2xl text-white font-extrabold text-lg shadow-lg select-none text-center whitespace-pre-line ${
                     tpl.type === "FORMAT EUROPÉEN"
                       ? "bg-[#4B4EDB]"
@@ -119,7 +119,7 @@ const Home = () => {
                   }}
                 >
                   {tpl.type}
-                </div>
+                </div> */}
                 <img
                   src={tpl.image}
                   alt={tpl.name}
@@ -129,9 +129,10 @@ const Home = () => {
                 {/* Bouton visible uniquement au hover */}
                 <Button
                   className="absolute bottom-6 left-1/2 -translate-x-1/2 px-8 py-3 text-base font-bold bg-pink-400 hover:bg-pink-500 text-white shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none group-hover:pointer-events-auto"
-                  onClick={() =>
-                    navigate("/editor", { state: { templateIdx: idx } })
-                  }
+                  onClick={() => {
+                    const targetIdx = idx === 1 ? 3 : idx; // image 2 -> Template4 (index 3)
+                    navigate("/editor", { state: { templateIdx: targetIdx } });
+                  }}
                 >
                   CRÉER MON CV
                 </Button>

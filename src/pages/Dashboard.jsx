@@ -4,7 +4,14 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { supabase } from "@/supabase/supabase";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { LayoutList, FilePlus2, Trash2, Pencil, Download } from "lucide-react";
+import {
+  LayoutList,
+  FilePlus2,
+  Trash2,
+  Pencil,
+  Download,
+  Home,
+} from "lucide-react";
 import { getCv } from "@/lib/cvRepository";
 import Template1CV from "@/components/templates/Template1CV";
 import Template2CV from "@/components/templates/Template2CV";
@@ -106,15 +113,27 @@ const Dashboard = () => {
                 {userName}
               </h1>
             </div>
-            <Button
-              asChild
-              className="bg-gradient-to-r from-blue-500 to-pink-500 text-white font-bold rounded-full shadow"
-            >
-              <a href="/editor" className="flex items-center gap-2">
-                <FilePlus2 className="w-4 h-4" />
-                Nouveau CV
-              </a>
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                asChild
+                variant="outline"
+                className="rounded-full transition-all duration-200 hover:shadow-md hover:-translate-y-0.5"
+              >
+                <a href="/" className="flex items-center gap-2">
+                  <Home className="w-4 h-4" />
+                  Accueil
+                </a>
+              </Button>
+              <Button
+                asChild
+                className="bg-gradient-to-r from-blue-500 to-pink-500 text-white font-bold rounded-full shadow transition-all duration-200 hover:shadow-xl hover:-translate-y-0.5"
+              >
+                <a href="/editor" className="flex items-center gap-2">
+                  <FilePlus2 className="w-4 h-4" />
+                  Nouveau CV
+                </a>
+              </Button>
+            </div>
           </div>
         </div>
 
@@ -204,7 +223,7 @@ const Dashboard = () => {
               return (
                 <Card
                   key={cv.id}
-                  className="p-4 bg-white/95 border border-blue-100 rounded-xl shadow-md transition-colors"
+                  className="p-4 bg-gradient-to-br from-white to-blue-50/60 border border-blue-100 rounded-2xl shadow-lg transition-colors"
                 >
                   {/* Hidden print root for this card */}
                   <div
@@ -218,7 +237,7 @@ const Dashboard = () => {
                   {/* Mini aperçu auto-fit */}
                   <div
                     ref={containerRef}
-                    className="mt-3 rounded-2xl border border-blue-100 bg-white shadow-md overflow-hidden relative"
+                    className="mt-3 rounded-2xl border border-blue-100 bg-white shadow-lg ring-1 ring-blue-50 overflow-hidden relative"
                   >
                     <div
                       className="relative"
@@ -244,7 +263,7 @@ const Dashboard = () => {
                       asChild
                       size="sm"
                       variant="outline"
-                      className="rounded-full"
+                      className="rounded-full transition-all duration-200 hover:shadow-md hover:-translate-y-0.5"
                     >
                       <a href={`/editor?template=${cv.template ?? 0}`}>
                         <Pencil className="w-4 h-4 mr-1" /> Modifier
@@ -253,7 +272,7 @@ const Dashboard = () => {
                     <Button
                       size="sm"
                       variant="outline"
-                      className="rounded-full"
+                      className="rounded-full transition-all duration-200 hover:shadow-md hover:-translate-y-0.5"
                       onClick={handlePrint}
                     >
                       <Download className="w-4 h-4 mr-1" /> Télécharger PDF
@@ -261,7 +280,7 @@ const Dashboard = () => {
                     <Button
                       size="sm"
                       variant="destructive"
-                      className="rounded-full"
+                      className="rounded-full transition-all duration-200 hover:shadow-md hover:-translate-y-0.5"
                       onClick={async () => {
                         if (!confirm("Supprimer ce CV ?")) return;
                         try {
