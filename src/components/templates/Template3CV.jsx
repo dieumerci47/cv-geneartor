@@ -1,9 +1,12 @@
 import React from "react";
 
-export default function Template3CV({ cvData }) {
+const Template3CV = React.forwardRef(function Template3CV({ cvData }, ref) {
   const { personal, profile, experiences, educations } = cvData;
   return (
-    <div className="bg-white w-[900px] mx-auto rounded-xl shadow-lg overflow-hidden text-[#222] font-sans p-8">
+    <div
+      ref={ref}
+      className="bg-white w-[900px] mx-auto rounded-xl shadow-lg overflow-hidden text-[#222] font-sans p-8"
+    >
       {/* Titre */}
       <h1 className="text-4xl font-bold text-center mb-8">Curriculum vitae</h1>
       {/* Informations personnelles */}
@@ -123,7 +126,9 @@ export default function Template3CV({ cvData }) {
       </div>
     </div>
   );
-}
+});
+
+export default Template3CV;
 
 function LabelValue({ label, value, marker }) {
   return (

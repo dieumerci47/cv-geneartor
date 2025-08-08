@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { useLocation, useSearchParams } from "react-router-dom";
+import { useReactToPrint } from "react-to-print";
 import {
   Accordion,
   AccordionItem,
@@ -28,12 +29,14 @@ import LivePreviewCV from "../components/LivePreviewCV";
 import Template1CV from "../components/templates/Template1CV";
 import Template2CV from "../components/templates/Template2CV";
 import Template3CV from "../components/templates/Template3CV";
+import Template4CV from "../components/templates/Template4CV";
 import SignatureModal from "@/components/SignatureModal";
 
 const TEMPLATES = [
   { label: "Template 1", component: Template1CV },
   { label: "Template 2", component: Template2CV },
   { label: "Template 3", component: Template3CV },
+  { label: "Template 4", component: Template4CV },
 ];
 
 const ALL_SECTIONS = [
@@ -43,6 +46,7 @@ const ALL_SECTIONS = [
   { key: "experience", label: "Expérience professionnelle" },
   { key: "skills", label: "Compétences" },
   { key: "languages", label: "Langues" },
+  { key: "interests", label: "Centres d'intérêt" },
   { key: "signature", label: "Signature" },
   { key: "internship", label: "Stage" },
   { key: "certificate", label: "Certificat" },
@@ -220,7 +224,10 @@ const Editor = () => {
   // State pour langues
   const [languages, setLanguages] = useState([]);
   const [editingLanguage, setEditingLanguage] = useState(null);
-  const emptyLanguage = { name: "", level: "" };
+  // const emptyLanguage = { name: "", level: "" };
+  // Ajout de l'état local pour afficher/masquer le formulaire d'ajout de langue
+  const [showLanguageForm, setShowLanguageForm] = useState(false);
+  const [languageInput, setLanguageInput] = useState({ name: "", level: "" });
 
   function handleEditLanguage(idx) {
     setEditingLanguage(idx);
@@ -237,8 +244,10 @@ const Editor = () => {
     );
   }
   function handleAddLanguage() {
-    setLanguages([...languages, { ...emptyLanguage }]);
-    setEditingLanguage(languages.length);
+    if (!languageInput.name || !languageInput.level) return;
+    setLanguages([...languages, { ...languageInput }]);
+    setLanguageInput({ name: "", level: "" });
+    setShowLanguageForm(false);
   }
   function handleFinishLanguage() {
     setEditingLanguage(null);
@@ -469,6 +478,20 @@ const Editor = () => {
 
   // ... tu peux ajouter les states pour les autres sections ici ...
 
+  // State pour centres d'intérêt
+  const [interests, setInterests] = useState([]);
+  const [interestInput, setInterestInput] = useState("");
+  function handleAddInterest(e) {
+    e.preventDefault();
+    if (interestInput.trim()) {
+      setInterests([...interests, interestInput.trim()]);
+      setInterestInput("");
+    }
+  }
+  function handleDeleteInterest(idx) {
+    setInterests(interests.filter((_, i) => i !== idx));
+  }
+
   // Construction de l'objet cvData unique
   const cvData = {
     personal: {
@@ -478,23 +501,59 @@ const Editor = () => {
     profile: profileValue,
     educations,
     experiences,
-    internships,
-    certificates,
     skills,
     languages,
-    interests: [], // à brancher si tu ajoutes la section
-    signature: { image: signature.image },
+    internships,
+    certificates,
+    interests,
+    signature: {
+      image: signature.image,
+      city: signature.city,
+      date: signature.date,
+    },
   };
 
   const PreviewComponent =
     TEMPLATES[selectedTemplate]?.component || LivePreviewCV;
 
+  const cvRef = useRef();
+  const handlePrint = useReactToPrint({
+    contentRef: cvRef,
+    documentTitle: "MonCV",
+  });
+  const [mobilePreviewOpen, setMobilePreviewOpen] = useState(false);
+
+  // Mobile: bouton de téléchargement intégré côté formulaire
+
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-[#e3e6f5] via-[#b3d0f7] to-[#eec6e6] px-2 py-8">
+      {/* Hidden print container (kept in DOM but not visible) */}
+      <div
+        id="print-root"
+        style={{ position: "absolute", left: "-10000px", top: 0 }}
+      >
+        <div ref={cvRef}>
+          <PreviewComponent
+            cvData={cvData}
+            leftSections={leftSections}
+            rightSections={rightSections}
+          />
+        </div>
+      </div>
       <div className="w-full max-w-6xl bg-white/80 rounded-xl shadow-lg flex flex-row gap-8 p-4 md:p-8">
         {/* Preview à gauche : sticky sur desktop, même hauteur que le scroll */}
         <div className="w-1/2 hidden md:flex items-start justify-center">
           <div className="sticky top-8 h-[calc(100vh-64px)] max-h-[calc(100vh-64px)] flex items-start justify-center overflow-y-auto">
+            {/* Bouton PDF au-dessus de la preview */}
+            {/*  <div className="w-full flex justify-center md:justify-start mb-4">
+              <Button
+                onClick={handlePrint}
+                className="bg-gradient-to-r from-blue-500 to-pink-500 text-white font-bold px-6 py-3 rounded-full shadow-md hover:scale-105 transition-transform flex items-center gap-2"
+              >
+                <span>⬇️</span> Télécharger en PDF
+              </Button>
+            </div> */}
+            {/* Preview du CV (visuel seulement) */}
             <PreviewComponent
               cvData={cvData}
               leftSections={leftSections}
@@ -502,20 +561,13 @@ const Editor = () => {
             />
           </div>
         </div>
-        {/* Preview mobile (en haut, non sticky) */}
-        <div className="w-full md:hidden mb-6">
-          <PreviewComponent
-            cvData={cvData}
-            leftSections={leftSections}
-            rightSections={rightSections}
-          />
-        </div>
-        {/* Formulaire à droite : scrollable sur desktop */}
-        <div className="w-full md:w-1/2 flex flex-col gap-6 max-h-[calc(100vh-64px)] overflow-y-auto pr-1">
+        {/* Sur mobile, on n'affiche que le formulaire. La prévisualisation s'ouvre via un bouton flottant. */}
+        {/* Formulaire à droite : scrollable sur desktop, style hackathon */}
+        <div className="w-full md:w-1/2 flex flex-col gap-8 max-h-[calc(100vh-64px)] overflow-y-auto pr-1 bg-gradient-to-br from-white/80 via-blue-50 to-pink-50 rounded-2xl shadow-xl p-4 md:p-8 border border-blue-100">
           {/* Sélecteur de template */}
           <div className="flex justify-end mb-2">
             <select
-              className="border rounded px-3 py-2 bg-white shadow"
+              className="border rounded px-3 py-2 bg-white shadow focus:ring-2 focus:ring-blue-400 text-base font-semibold"
               value={selectedTemplate}
               onChange={(e) => setSelectedTemplate(Number(e.target.value))}
             >
@@ -526,32 +578,35 @@ const Editor = () => {
               ))}
             </select>
           </div>
-          {/* Accordéon infos personnelles (jamais déplaçable) */}
+          {/* Accordéon infos personnelles (jamais déplaçable, mais même style visuel) */}
           <div className="mb-4">
-            <Accordion
-              type="single"
-              collapsible
-              value={open}
-              onValueChange={setOpen}
-            >
-              <AccordionItem value="personal">
-                <AccordionTrigger className="text-lg font-bold flex items-center justify-between">
-                  Informations personnelles
-                </AccordionTrigger>
-                <AccordionContent>
-                  <PersonalInfoSection
-                    fields={personalFields}
-                    available={personalAvailable}
-                    values={personalValues}
-                    photo={personalPhoto}
-                    onChange={handlePersonalChange}
-                    onPhotoChange={handlePersonalPhotoChange}
-                    onAddField={handleAddPersonalField}
-                    onRemoveField={handleRemovePersonalField}
-                  />
-                </AccordionContent>
-              </AccordionItem>
-            </Accordion>
+            <SortableAccordionItem id="personal">
+              <Accordion
+                type="single"
+                collapsible
+                value={open}
+                onValueChange={setOpen}
+              >
+                <AccordionItem value="personal">
+                  <AccordionTrigger className="text-xl font-extrabold flex items-center gap-2 text-blue-700">
+                    <span className="text-2xl">👤</span> Informations
+                    personnelles
+                  </AccordionTrigger>
+                  <AccordionContent className="bg-white/95 rounded-xl shadow-md border border-blue-100 p-6 animate-fade-in">
+                    <PersonalInfoSection
+                      fields={personalFields}
+                      available={personalAvailable}
+                      values={personalValues}
+                      photo={personalPhoto}
+                      onChange={handlePersonalChange}
+                      onPhotoChange={handlePersonalPhotoChange}
+                      onAddField={handleAddPersonalField}
+                      onRemoveField={handleRemovePersonalField}
+                    />
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
+            </SortableAccordionItem>
           </div>
           {/* Accordéon sections de gauche (DnD) */}
           <DndContext
@@ -571,7 +626,16 @@ const Editor = () => {
                 {leftSections.map((key) => (
                   <SortableAccordionItem id={key} key={key}>
                     <AccordionItem value={key}>
-                      <AccordionTrigger className="text-lg font-bold flex items-center justify-between">
+                      <AccordionTrigger className="text-xl font-extrabold flex items-center gap-2 text-violet-700">
+                        {key === "skills" && (
+                          <span className="text-2xl">🛠️</span>
+                        )}
+                        {key === "languages" && (
+                          <span className="text-2xl">🌍</span>
+                        )}
+                        {key === "interests" && (
+                          <span className="text-2xl">🎯</span>
+                        )}
                         {ALL_SECTIONS.find((s) => s.key === key)?.label}
                         <Button
                           size="icon"
@@ -580,25 +644,26 @@ const Editor = () => {
                             e.stopPropagation();
                             removeLeftSection(key);
                           }}
+                          className="hover:bg-red-100 hover:text-red-600"
                         >
                           ×
                         </Button>
                       </AccordionTrigger>
-                      <AccordionContent>
+                      <AccordionContent className="bg-white/95 rounded-xl shadow-md border border-violet-100 p-6 animate-fade-in">
                         {key === "skills" && (
                           <div className="space-y-6">
                             {skills.map((sk, idx) => (
                               <div
                                 key={idx}
-                                className="border rounded-lg p-4 mb-4 bg-white/90"
+                                className="border rounded-lg p-4 mb-4 bg-blue-50/60 hover:shadow-lg transition-all"
                               >
                                 {editingSkill === idx ? (
                                   <>
-                                    <label className="block font-medium mb-1">
+                                    <label className="block font-semibold text-violet-700 mb-1 text-base">
                                       Compétence
                                     </label>
                                     <input
-                                      className="w-full mb-2 rounded border px-3 py-2 bg-violet-50"
+                                      className="w-full mb-2 rounded-lg border border-blue-200 px-4 py-2 bg-blue-50 focus:ring-2 focus:ring-violet-400 text-base"
                                       placeholder="Nom de la compétence"
                                       value={sk.name}
                                       onChange={(e) =>
@@ -608,11 +673,11 @@ const Editor = () => {
                                         )
                                       }
                                     />
-                                    <label className="block font-medium mb-1">
+                                    <label className="block font-semibold text-violet-700 mb-1 text-base">
                                       Niveau
                                     </label>
                                     <select
-                                      className="w-full rounded border px-3 py-2 bg-violet-50 mb-2"
+                                      className="w-full rounded-lg border border-blue-200 px-4 py-2 bg-blue-50 focus:ring-2 focus:ring-violet-400 text-base mb-2"
                                       value={sk.level}
                                       onChange={(e) =>
                                         handleChangeSkill(
@@ -635,13 +700,14 @@ const Editor = () => {
                                         type="button"
                                         variant="destructive"
                                         onClick={() => handleDeleteSkill(idx)}
+                                        className="rounded-full px-4 py-2"
                                       >
                                         🗑️
                                       </Button>
                                       <Button
                                         type="button"
                                         onClick={handleFinishSkill}
-                                        className="bg-violet-700 text-white font-bold"
+                                        className="rounded-full bg-gradient-to-r from-violet-500 to-blue-400 text-white font-bold shadow-md hover:scale-105 transition-transform px-6"
                                       >
                                         ✓ Terminé
                                       </Button>
@@ -649,12 +715,15 @@ const Editor = () => {
                                   </>
                                 ) : (
                                   <div className="flex items-center justify-between">
-                                    <div className="font-bold">{sk.name}</div>
+                                    <div className="font-bold text-violet-900 text-lg">
+                                      {sk.name}
+                                    </div>
                                     <Button
                                       type="button"
                                       size="sm"
                                       variant="outline"
                                       onClick={() => handleEditSkill(idx)}
+                                      className="rounded-full border-violet-300 text-violet-700 font-semibold px-4 py-2 hover:bg-violet-100"
                                     >
                                       Modifier
                                     </Button>
@@ -665,6 +734,7 @@ const Editor = () => {
                             <Button
                               type="button"
                               variant="outline"
+                              className="rounded-full bg-gradient-to-r from-violet-400 to-blue-400 text-white font-bold shadow-md hover:scale-105 transition-transform px-4 py-2"
                               onClick={handleAddSkill}
                             >
                               + Ajouter une compétence
@@ -673,18 +743,88 @@ const Editor = () => {
                         )}
                         {key === "languages" && (
                           <div className="space-y-6">
+                            {/* Affiche le bouton ou le formulaire selon l'état */}
+                            {!showLanguageForm ? (
+                              <div className="flex justify-center">
+                                <Button
+                                  type="button"
+                                  onClick={() => setShowLanguageForm(true)}
+                                  className="rounded-full px-8 py-3 bg-gradient-to-r from-blue-400 to-pink-400 text-white font-bold shadow-md hover:scale-105 transition-transform flex items-center gap-2 text-base"
+                                >
+                                  <span>🌍</span> + Ajouter une langue
+                                </Button>
+                              </div>
+                            ) : (
+                              <div className="border border-blue-100 rounded-2xl p-6 bg-white/95 shadow-lg">
+                                <label className="font-bold text-blue-700 text-lg mb-2 flex items-center gap-2">
+                                  <span className="text-2xl">🌍</span> Langue
+                                </label>
+                                <input
+                                  className="w-full mb-3 rounded-lg border border-blue-200 px-4 py-2 bg-blue-50 focus:ring-2 focus:ring-blue-400 text-base"
+                                  placeholder="Nom de la langue"
+                                  value={languageInput.name}
+                                  onChange={(e) =>
+                                    setLanguageInput({
+                                      ...languageInput,
+                                      name: e.target.value,
+                                    })
+                                  }
+                                />
+                                <label className="font-medium mb-1">
+                                  Niveau
+                                </label>
+                                <select
+                                  className="w-full rounded-lg border border-blue-200 px-4 py-2 bg-blue-50 focus:ring-2 focus:ring-blue-400 text-base mb-3"
+                                  value={languageInput.level}
+                                  onChange={(e) =>
+                                    setLanguageInput({
+                                      ...languageInput,
+                                      level: e.target.value,
+                                    })
+                                  }
+                                >
+                                  <option value="">
+                                    Sélectionner le niveau...
+                                  </option>
+                                  {LEVELS.map((lv) => (
+                                    <option key={lv.value} value={lv.value}>
+                                      {lv.label}
+                                    </option>
+                                  ))}
+                                </select>
+                                <div className="flex justify-between mt-4">
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    className="rounded-full px-6 py-2 font-bold"
+                                    onClick={() => setShowLanguageForm(false)}
+                                  >
+                                    Annuler
+                                  </Button>
+                                  <Button
+                                    type="button"
+                                    onClick={handleAddLanguage}
+                                    className="rounded-full px-8 py-3 bg-gradient-to-r from-blue-400 to-pink-400 text-white font-bold shadow-md hover:scale-105 transition-transform flex items-center gap-2 text-base"
+                                  >
+                                    <span>🌍</span> Ajouter la langue
+                                  </Button>
+                                </div>
+                              </div>
+                            )}
+                            {/* Liste des langues ajoutées */}
                             {languages.map((l, idx) => (
                               <div
                                 key={idx}
-                                className="border rounded-lg p-4 mb-4 bg-white/90"
+                                className="border border-blue-100 rounded-2xl p-6 mb-6 bg-white/95 shadow-lg"
                               >
                                 {editingLanguage === idx ? (
                                   <>
-                                    <label className="block font-medium mb-1">
+                                    <label className="font-bold text-blue-700 text-lg mb-2 flex items-center gap-2">
+                                      <span className="text-2xl">🌍</span>{" "}
                                       Langue
                                     </label>
                                     <input
-                                      className="w-full mb-2 rounded border px-3 py-2 bg-violet-50"
+                                      className="w-full mb-3 rounded-lg border border-blue-200 px-4 py-2 bg-blue-50 focus:ring-2 focus:ring-blue-400 text-base"
                                       placeholder="Nom de la langue"
                                       value={l.name}
                                       onChange={(e) =>
@@ -694,11 +834,11 @@ const Editor = () => {
                                         )
                                       }
                                     />
-                                    <label className="block font-medium mb-1">
+                                    <label className="font-medium mb-1">
                                       Niveau
                                     </label>
                                     <select
-                                      className="w-full rounded border px-3 py-2 bg-violet-50 mb-2"
+                                      className="w-full rounded-lg border border-blue-200 px-4 py-2 bg-blue-50 focus:ring-2 focus:ring-blue-400 text-base mb-3"
                                       value={l.level}
                                       onChange={(e) =>
                                         handleChangeLanguage(
@@ -716,32 +856,64 @@ const Editor = () => {
                                         </option>
                                       ))}
                                     </select>
-                                    <div className="flex justify-between mt-3">
+                                    <div className="flex justify-between mt-4">
                                       <Button
                                         type="button"
                                         variant="destructive"
+                                        className="rounded-full px-4 py-2 bg-red-100 text-red-700 hover:bg-red-200 font-bold flex items-center gap-2"
                                         onClick={() =>
                                           handleDeleteLanguage(idx)
                                         }
                                       >
-                                        🗑️
+                                        <span>🗑️</span> Supprimer
                                       </Button>
                                       <Button
                                         type="button"
                                         onClick={handleFinishLanguage}
-                                        className="bg-violet-700 text-white font-bold"
+                                        className="rounded-full px-6 py-2 bg-gradient-to-r from-violet-500 to-blue-500 text-white font-bold flex items-center gap-2 hover:scale-105 transition-transform"
                                       >
-                                        ✓ Terminé
+                                        <span>✓</span> Terminé
                                       </Button>
                                     </div>
                                   </>
                                 ) : (
-                                  <div className="flex items-center justify-between">
-                                    <div className="font-bold">{l.name}</div>
+                                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+                                    <div>
+                                      <div className="font-bold text-blue-900 text-lg flex items-center gap-2">
+                                        <span>🌍</span>
+                                        {l.name}
+                                      </div>
+                                      <div className="mt-1 flex items-center gap-2">
+                                        {l.level && (
+                                          <span className="flex items-center gap-1">
+                                            {Array.from({ length: 5 }).map(
+                                              (_, i) => (
+                                                <span
+                                                  key={i}
+                                                  className={
+                                                    i < Number(l.level)
+                                                      ? "inline-block w-3 h-3 rounded-full bg-blue-500"
+                                                      : "inline-block w-3 h-3 rounded-full bg-gray-300"
+                                                  }
+                                                />
+                                              )
+                                            )}
+                                          </span>
+                                        )}
+                                        <span className="text-xs text-gray-500 ml-2">
+                                          {LEVELS.find(
+                                            (lv) =>
+                                              String(lv.value) ===
+                                              String(l.level)
+                                          )?.label || ""}
+                                        </span>
+                                      </div>
+                                    </div>
                                     <Button
                                       type="button"
                                       size="sm"
                                       variant="outline"
+                                      className="rounded-full border-blue-300 text-blue-700 font-bold hover:bg-blue-50"
                                       onClick={() => handleEditLanguage(idx)}
                                     >
                                       Modifier
@@ -750,19 +922,57 @@ const Editor = () => {
                                 )}
                               </div>
                             ))}
-                            <Button
-                              type="button"
-                              variant="outline"
-                              onClick={handleAddLanguage}
-                            >
-                              + Ajouter une langue
-                            </Button>
                           </div>
                         )}
-                        {/* TODO: brancher les formulaires pour chaque section */}
-                        <div className="text-gray-400 italic">
-                          Formulaire à venir pour cette section...
-                        </div>
+                        {key === "interests" && (
+                          <div className="space-y-6">
+                            {interests &&
+                              interests.length > 0 &&
+                              interests.map((interest, idx) => (
+                                <div
+                                  key={idx}
+                                  className="border rounded-lg p-4 mb-4 bg-blue-50/60 hover:shadow-lg transition-all flex items-center justify-between"
+                                >
+                                  <div className="font-bold text-blue-900">
+                                    {interest}
+                                  </div>
+                                  <Button
+                                    type="button"
+                                    variant="destructive"
+                                    size="icon"
+                                    onClick={() => handleDeleteInterest(idx)}
+                                    className="ml-2"
+                                  >
+                                    🗑️
+                                  </Button>
+                                </div>
+                              ))}
+                            <form
+                              className="flex gap-2 items-end"
+                              onSubmit={handleAddInterest}
+                            >
+                              <div className="flex-1">
+                                <label className="block font-medium mb-1">
+                                  Centre d'intérêt
+                                </label>
+                                <input
+                                  className="w-full rounded border px-3 py-2 bg-violet-50 focus:ring-2 focus:ring-blue-400"
+                                  placeholder="Ex: Football, Lecture, Musique..."
+                                  value={interestInput}
+                                  onChange={(e) =>
+                                    setInterestInput(e.target.value)
+                                  }
+                                />
+                              </div>
+                              <Button
+                                type="submit"
+                                className="rounded-full bg-gradient-to-r from-blue-400 to-pink-400 text-white font-bold shadow-md hover:scale-105 transition-transform px-4 py-2"
+                              >
+                                + Ajouter
+                              </Button>
+                            </form>
+                          </div>
+                        )}
                       </AccordionContent>
                     </AccordionItem>
                   </SortableAccordionItem>
@@ -788,7 +998,25 @@ const Editor = () => {
                 {rightSections.map((key) => (
                   <SortableAccordionItem id={key} key={key}>
                     <AccordionItem value={key}>
-                      <AccordionTrigger className="text-lg font-bold flex items-center justify-between">
+                      <AccordionTrigger className="text-xl font-extrabold flex items-center gap-2 text-pink-700">
+                        {key === "profile" && (
+                          <span className="text-2xl">📝</span>
+                        )}
+                        {key === "education" && (
+                          <span className="text-2xl">🎓</span>
+                        )}
+                        {key === "experience" && (
+                          <span className="text-2xl">💼</span>
+                        )}
+                        {key === "internship" && (
+                          <span className="text-2xl">🏢</span>
+                        )}
+                        {key === "certificate" && (
+                          <span className="text-2xl">📜</span>
+                        )}
+                        {key === "signature" && (
+                          <span className="text-2xl">✍️</span>
+                        )}
                         {ALL_SECTIONS.find((s) => s.key === key)?.label}
                         <Button
                           size="icon"
@@ -797,16 +1025,19 @@ const Editor = () => {
                             e.stopPropagation();
                             removeRightSection(key);
                           }}
+                          className="hover:bg-red-100 hover:text-red-600"
                         >
                           ×
                         </Button>
                       </AccordionTrigger>
-                      <AccordionContent>
+                      <AccordionContent className="bg-white/95 rounded-xl shadow-md border border-pink-100 p-6 animate-fade-in">
                         {key === "profile" && (
                           <div className="space-y-4">
-                            <label className="font-medium">Description</label>
+                            <label className="font-bold text-blue-700 text-lg mb-2 flex items-center gap-2">
+                              <span className="text-2xl">📝</span> Profil
+                            </label>
                             <textarea
-                              className="w-full min-h-[100px] rounded-lg border border-gray-300 p-3 focus:outline-none focus:ring-2 focus:ring-blue-400 bg-violet-50 text-gray-900"
+                              className="w-full min-h-[100px] rounded-xl border border-blue-200 p-4 focus:outline-none focus:ring-2 focus:ring-blue-400 bg-blue-50 text-gray-900 shadow-md"
                               placeholder="Commencez à rédiger ici..."
                               value={profileValue}
                               onChange={(e) => setProfileValue(e.target.value)}
@@ -815,7 +1046,7 @@ const Editor = () => {
                               <Button
                                 type="button"
                                 variant="outline"
-                                className="flex items-center gap-2"
+                                className="flex items-center gap-2 bg-gradient-to-r from-violet-400 to-blue-400 text-white font-bold shadow-md hover:scale-105 transition-transform px-6 py-2 rounded-full"
                               >
                                 <span>✨</span> Suggestions de l'IA
                               </Button>
@@ -827,15 +1058,15 @@ const Editor = () => {
                             {educations.map((ed, idx) => (
                               <div
                                 key={idx}
-                                className="border rounded-lg p-4 mb-4 bg-white/90"
+                                className="border rounded-lg p-4 mb-4 bg-blue-50/60 hover:shadow-lg transition-all"
                               >
                                 {editingEducation === idx ? (
                                   <>
-                                    <label className="block font-medium mb-1">
+                                    <label className="block font-semibold text-blue-700 mb-1 text-base">
                                       Formation
                                     </label>
                                     <input
-                                      className="w-full mb-2 rounded border px-3 py-2 bg-violet-50"
+                                      className="w-full rounded-lg border border-blue-200 px-4 py-2 bg-blue-50 focus:ring-2 focus:ring-blue-400 text-base"
                                       placeholder="Intitulé du diplôme ou formation"
                                       value={ed.title}
                                       onChange={(e) =>
@@ -847,11 +1078,11 @@ const Editor = () => {
                                     />
                                     <div className="flex gap-2 mb-2">
                                       <div className="flex-1">
-                                        <label className="block font-medium mb-1">
+                                        <label className="block font-semibold text-blue-700 mb-1 text-base">
                                           Établissement
                                         </label>
                                         <input
-                                          className="w-full rounded border px-3 py-2 bg-violet-50"
+                                          className="w-full rounded-lg border border-blue-200 px-4 py-2 bg-blue-50 focus:ring-2 focus:ring-blue-400 text-base"
                                           placeholder="Établissement"
                                           value={ed.school}
                                           onChange={(e) =>
@@ -863,11 +1094,11 @@ const Editor = () => {
                                         />
                                       </div>
                                       <div className="flex-1">
-                                        <label className="block font-medium mb-1">
+                                        <label className="block font-semibold text-blue-700 mb-1 text-base">
                                           Ville
                                         </label>
                                         <input
-                                          className="w-full rounded border px-3 py-2 bg-violet-50"
+                                          className="w-full rounded-lg border border-blue-200 px-4 py-2 bg-blue-50 focus:ring-2 focus:ring-blue-400 text-base"
                                           placeholder="Ville"
                                           value={ed.city}
                                           onChange={(e) =>
@@ -881,12 +1112,12 @@ const Editor = () => {
                                     </div>
                                     <div className="flex gap-2 mb-2 items-end">
                                       <div>
-                                        <label className="block font-medium mb-1">
+                                        <label className="block font-semibold text-blue-700 mb-1 text-base">
                                           Date de début
                                         </label>
                                         <div className="flex gap-1">
                                           <select
-                                            className="rounded border px-2 py-1 bg-violet-50"
+                                            className="rounded-lg border border-blue-200 px-2 py-1 bg-blue-50 focus:ring-2 focus:ring-blue-400 text-base"
                                             value={ed.startMonth}
                                             onChange={(e) =>
                                               handleChangeEducation(
@@ -906,7 +1137,7 @@ const Editor = () => {
                                             ))}
                                           </select>
                                           <select
-                                            className="rounded border px-2 py-1 bg-violet-50"
+                                            className="rounded-lg border border-blue-200 px-2 py-1 bg-blue-50 focus:ring-2 focus:ring-blue-400 text-base"
                                             value={ed.startYear}
                                             onChange={(e) =>
                                               handleChangeEducation(
@@ -928,12 +1159,12 @@ const Editor = () => {
                                         </div>
                                       </div>
                                       <div>
-                                        <label className="block font-medium mb-1">
+                                        <label className="block font-semibold text-blue-700 mb-1 text-base">
                                           Date de fin
                                         </label>
                                         <div className="flex gap-1 items-center">
                                           <select
-                                            className="rounded border px-2 py-1 bg-violet-50"
+                                            className="rounded-lg border border-blue-200 px-2 py-1 bg-blue-50 focus:ring-2 focus:ring-blue-400 text-base"
                                             value={ed.endMonth}
                                             onChange={(e) =>
                                               handleChangeEducation(
@@ -954,7 +1185,7 @@ const Editor = () => {
                                             ))}
                                           </select>
                                           <select
-                                            className="rounded border px-2 py-1 bg-violet-50"
+                                            className="rounded-lg border border-blue-200 px-2 py-1 bg-blue-50 focus:ring-2 focus:ring-blue-400 text-base"
                                             value={ed.endYear}
                                             onChange={(e) =>
                                               handleChangeEducation(
@@ -990,65 +1221,12 @@ const Editor = () => {
                                         </div>
                                       </div>
                                     </div>
-                                    <label className="block font-medium mb-1 mt-2">
+                                    <label className="block font-semibold text-blue-700 mb-1 text-base mt-2">
                                       Description
                                     </label>
-                                    <div className="flex items-center gap-2 mb-2">
-                                      {/* Boutons de mise en forme (non fonctionnels ici) */}
-                                      <Button
-                                        type="button"
-                                        size="icon"
-                                        variant="ghost"
-                                      >
-                                        <b>B</b>
-                                      </Button>
-                                      <Button
-                                        type="button"
-                                        size="icon"
-                                        variant="ghost"
-                                      >
-                                        <i>I</i>
-                                      </Button>
-                                      <Button
-                                        type="button"
-                                        size="icon"
-                                        variant="ghost"
-                                      >
-                                        <u>U</u>
-                                      </Button>
-                                      <Button
-                                        type="button"
-                                        size="icon"
-                                        variant="ghost"
-                                      >
-                                        •
-                                      </Button>
-                                      <Button
-                                        type="button"
-                                        size="icon"
-                                        variant="ghost"
-                                      >
-                                        1.
-                                      </Button>
-                                      <Button
-                                        type="button"
-                                        size="icon"
-                                        variant="ghost"
-                                      >
-                                        ≡
-                                      </Button>
-                                      <div className="flex-1" />
-                                      <Button
-                                        type="button"
-                                        variant="outline"
-                                        className="flex items-center gap-2"
-                                      >
-                                        <span>✨</span> Suggestions de l'IA
-                                      </Button>
-                                    </div>
                                     <textarea
-                                      className="w-full min-h-[80px] rounded border px-3 py-2 bg-violet-50"
-                                      placeholder="Commencez à rédiger ici..."
+                                      className="w-full min-h-[80px] rounded-lg border border-blue-200 px-4 py-2 bg-blue-50 focus:ring-2 focus:ring-blue-400 text-base"
+                                      placeholder="Description de la formation, matières principales, etc."
                                       value={ed.description}
                                       onChange={(e) =>
                                         handleChangeEducation(
@@ -1070,7 +1248,7 @@ const Editor = () => {
                                       <Button
                                         type="button"
                                         onClick={handleFinishEducation}
-                                        className="bg-violet-700 text-white font-bold"
+                                        className="bg-blue-700 text-white font-bold rounded-lg px-6"
                                       >
                                         ✓ Terminé
                                       </Button>
@@ -1079,7 +1257,7 @@ const Editor = () => {
                                 ) : (
                                   <div className="flex items-center justify-between">
                                     <div>
-                                      <div className="font-bold">
+                                      <div className="font-bold text-blue-900 text-lg">
                                         {ed.title}
                                       </div>
                                       <div className="text-xs text-gray-500">
@@ -1112,15 +1290,15 @@ const Editor = () => {
                             {experiences.map((ex, idx) => (
                               <div
                                 key={idx}
-                                className="border rounded-lg p-4 mb-4 bg-white/90"
+                                className="border rounded-lg p-4 mb-4 bg-blue-50/60 hover:shadow-lg transition-all"
                               >
                                 {editingExperience === idx ? (
                                   <>
-                                    <label className="block font-medium mb-1">
+                                    <label className="block font-semibold text-violet-700 mb-1 text-base">
                                       Poste
                                     </label>
                                     <input
-                                      className="w-full mb-2 rounded border px-3 py-2 bg-violet-50"
+                                      className="w-full mb-2 rounded-lg border border-blue-200 px-4 py-2 bg-blue-50 focus:ring-2 focus:ring-violet-400 text-base"
                                       placeholder="Intitulé du poste"
                                       value={ex.job}
                                       onChange={(e) =>
@@ -1132,11 +1310,11 @@ const Editor = () => {
                                     />
                                     <div className="flex gap-2 mb-2">
                                       <div className="flex-1">
-                                        <label className="block font-medium mb-1">
+                                        <label className="block font-semibold text-violet-700 mb-1 text-base">
                                           Employeur
                                         </label>
                                         <input
-                                          className="w-full rounded border px-3 py-2 bg-violet-50"
+                                          className="w-full rounded-lg border border-blue-200 px-4 py-2 bg-blue-50 focus:ring-2 focus:ring-violet-400 text-base"
                                           placeholder="Employeur"
                                           value={ex.employer}
                                           onChange={(e) =>
@@ -1148,11 +1326,11 @@ const Editor = () => {
                                         />
                                       </div>
                                       <div className="flex-1">
-                                        <label className="block font-medium mb-1">
+                                        <label className="block font-semibold text-violet-700 mb-1 text-base">
                                           Ville
                                         </label>
                                         <input
-                                          className="w-full rounded border px-3 py-2 bg-violet-50"
+                                          className="w-full rounded-lg border border-blue-200 px-4 py-2 bg-blue-50 focus:ring-2 focus:ring-violet-400 text-base"
                                           placeholder="Ville"
                                           value={ex.city}
                                           onChange={(e) =>
@@ -1166,12 +1344,12 @@ const Editor = () => {
                                     </div>
                                     <div className="flex gap-2 mb-2 items-end">
                                       <div>
-                                        <label className="block font-medium mb-1">
+                                        <label className="block font-semibold text-violet-700 mb-1 text-base">
                                           Date de début
                                         </label>
                                         <div className="flex gap-1">
                                           <select
-                                            className="rounded border px-2 py-1 bg-violet-50"
+                                            className="rounded-lg border border-blue-200 px-2 py-1 bg-blue-50 focus:ring-2 focus:ring-violet-400 text-base"
                                             value={ex.startMonth}
                                             onChange={(e) =>
                                               handleChangeExperience(
@@ -1191,7 +1369,7 @@ const Editor = () => {
                                             ))}
                                           </select>
                                           <select
-                                            className="rounded border px-2 py-1 bg-violet-50"
+                                            className="rounded-lg border border-blue-200 px-2 py-1 bg-blue-50 focus:ring-2 focus:ring-violet-400 text-base"
                                             value={ex.startYear}
                                             onChange={(e) =>
                                               handleChangeExperience(
@@ -1213,12 +1391,12 @@ const Editor = () => {
                                         </div>
                                       </div>
                                       <div>
-                                        <label className="block font-medium mb-1">
+                                        <label className="block font-semibold text-violet-700 mb-1 text-base">
                                           Date de fin
                                         </label>
                                         <div className="flex gap-1 items-center">
                                           <select
-                                            className="rounded border px-2 py-1 bg-violet-50"
+                                            className="rounded-lg border border-blue-200 px-2 py-1 bg-blue-50 focus:ring-2 focus:ring-violet-400 text-base"
                                             value={ex.endMonth}
                                             onChange={(e) =>
                                               handleChangeExperience(
@@ -1239,7 +1417,7 @@ const Editor = () => {
                                             ))}
                                           </select>
                                           <select
-                                            className="rounded border px-2 py-1 bg-violet-50"
+                                            className="rounded-lg border border-blue-200 px-2 py-1 bg-blue-50 focus:ring-2 focus:ring-violet-400 text-base"
                                             value={ex.endYear}
                                             onChange={(e) =>
                                               handleChangeExperience(
@@ -1275,65 +1453,12 @@ const Editor = () => {
                                         </div>
                                       </div>
                                     </div>
-                                    <label className="block font-medium mb-1 mt-2">
+                                    <label className="block font-semibold text-violet-700 mb-1 text-base mt-2">
                                       Description
                                     </label>
-                                    <div className="flex items-center gap-2 mb-2">
-                                      {/* Boutons de mise en forme (non fonctionnels ici) */}
-                                      <Button
-                                        type="button"
-                                        size="icon"
-                                        variant="ghost"
-                                      >
-                                        <b>B</b>
-                                      </Button>
-                                      <Button
-                                        type="button"
-                                        size="icon"
-                                        variant="ghost"
-                                      >
-                                        <i>I</i>
-                                      </Button>
-                                      <Button
-                                        type="button"
-                                        size="icon"
-                                        variant="ghost"
-                                      >
-                                        <u>U</u>
-                                      </Button>
-                                      <Button
-                                        type="button"
-                                        size="icon"
-                                        variant="ghost"
-                                      >
-                                        •
-                                      </Button>
-                                      <Button
-                                        type="button"
-                                        size="icon"
-                                        variant="ghost"
-                                      >
-                                        1.
-                                      </Button>
-                                      <Button
-                                        type="button"
-                                        size="icon"
-                                        variant="ghost"
-                                      >
-                                        ≡
-                                      </Button>
-                                      <div className="flex-1" />
-                                      <Button
-                                        type="button"
-                                        variant="outline"
-                                        className="flex items-center gap-2"
-                                      >
-                                        <span>✨</span> Suggestions de l'IA
-                                      </Button>
-                                    </div>
                                     <textarea
-                                      className="w-full min-h-[80px] rounded border px-3 py-2 bg-violet-50"
-                                      placeholder="Commencez à rédiger ici..."
+                                      className="w-full min-h-[80px] rounded-lg border border-blue-200 px-4 py-2 bg-blue-50 focus:ring-2 focus:ring-violet-400 text-base"
+                                      placeholder="Description du poste, missions principales, etc."
                                       value={ex.description}
                                       onChange={(e) =>
                                         handleChangeExperience(
@@ -1349,13 +1474,14 @@ const Editor = () => {
                                         onClick={() =>
                                           handleDeleteExperience(idx)
                                         }
+                                        className="rounded-full px-4 py-2"
                                       >
                                         🗑️
                                       </Button>
                                       <Button
                                         type="button"
                                         onClick={handleFinishExperience}
-                                        className="bg-violet-700 text-white font-bold"
+                                        className="rounded-full bg-gradient-to-r from-violet-500 to-blue-400 text-white font-bold shadow-md hover:scale-105 transition-transform px-6"
                                       >
                                         ✓ Terminé
                                       </Button>
@@ -1363,18 +1489,15 @@ const Editor = () => {
                                   </>
                                 ) : (
                                   <div className="flex items-center justify-between">
-                                    <div>
-                                      <div className="font-bold">{ex.job}</div>
-                                      <div className="text-xs text-gray-500">
-                                        {ex.employer}{" "}
-                                        {ex.city && `- ${ex.city}`}
-                                      </div>
+                                    <div className="font-bold text-violet-900 text-lg">
+                                      {ex.job}
                                     </div>
                                     <Button
                                       type="button"
                                       size="sm"
                                       variant="outline"
                                       onClick={() => handleEditExperience(idx)}
+                                      className="rounded-full border-violet-300 text-violet-700 font-semibold px-4 py-2 hover:bg-violet-100"
                                     >
                                       Modifier
                                     </Button>
@@ -1385,6 +1508,7 @@ const Editor = () => {
                             <Button
                               type="button"
                               variant="outline"
+                              className="rounded-full bg-gradient-to-r from-violet-400 to-blue-400 text-white font-bold shadow-md hover:scale-105 transition-transform px-4 py-2"
                               onClick={handleAddExperience}
                             >
                               + Ajouter une expérience
@@ -1393,18 +1517,26 @@ const Editor = () => {
                         )}
                         {key === "certificate" && (
                           <div className="space-y-6">
+                            {certificates.length === 0 && (
+                              <div className="flex items-center justify-center py-8">
+                                <span className="bg-yellow-100 text-yellow-700 px-4 py-2 rounded-full text-sm font-semibold shadow animate-fade-in">
+                                  Section à venir...
+                                </span>
+                              </div>
+                            )}
                             {certificates.map((c, idx) => (
                               <div
                                 key={idx}
-                                className="border rounded-lg p-4 mb-4 bg-white/90"
+                                className="border border-blue-100 rounded-2xl p-6 mb-6 bg-white/95 shadow-lg animate-fade-in"
                               >
                                 {editingCertificate === idx ? (
                                   <>
-                                    <label className="block font-medium mb-1">
+                                    <label className="block font-bold text-blue-700 text-lg mb-2 flex items-center gap-2">
+                                      <span className="text-2xl">📜</span>{" "}
                                       Certificat
                                     </label>
                                     <input
-                                      className="w-full mb-2 rounded border px-3 py-2 bg-violet-50"
+                                      className="w-full mb-3 rounded-lg border border-blue-200 px-4 py-2 bg-blue-50 focus:ring-2 focus:ring-blue-400 text-base"
                                       placeholder="Nom du certificat"
                                       value={c.name}
                                       onChange={(e) =>
@@ -1414,14 +1546,14 @@ const Editor = () => {
                                         )
                                       }
                                     />
-                                    <div className="flex gap-2 mb-2 items-end">
-                                      <div>
+                                    <div className="flex flex-col md:flex-row gap-3 mb-3 items-end">
+                                      <div className="flex-1">
                                         <label className="block font-medium mb-1">
                                           Période
                                         </label>
-                                        <div className="flex gap-1">
+                                        <div className="flex gap-2 flex-wrap md:flex-nowrap">
                                           <select
-                                            className="rounded border px-2 py-1 bg-violet-50"
+                                            className="rounded-lg border border-blue-200 px-2 py-1 bg-blue-50 focus:ring-2 focus:ring-blue-400 text-base"
                                             value={c.month}
                                             onChange={(e) =>
                                               handleChangeCertificate(
@@ -1439,7 +1571,7 @@ const Editor = () => {
                                             ))}
                                           </select>
                                           <select
-                                            className="rounded border px-2 py-1 bg-violet-50"
+                                            className="rounded-lg border border-blue-200 px-2 py-1 bg-blue-50 focus:ring-2 focus:ring-blue-400 text-base"
                                             value={c.year}
                                             onChange={(e) =>
                                               handleChangeCertificate(
@@ -1459,7 +1591,7 @@ const Editor = () => {
                                               </option>
                                             ))}
                                           </select>
-                                          <label className="ml-2 flex items-center gap-1 text-xs">
+                                          <label className="ml-2 flex items-center gap-1 text-xs font-medium">
                                             <input
                                               type="checkbox"
                                               checked={c.current}
@@ -1475,64 +1607,12 @@ const Editor = () => {
                                         </div>
                                       </div>
                                     </div>
-                                    <label className="block font-medium mb-1 mt-2">
+                                    <label className="font-medium mb-1 mt-2 flex items-center gap-2">
+                                      <span className="text-lg">📝</span>{" "}
                                       Description
                                     </label>
-                                    <div className="flex items-center gap-2 mb-2">
-                                      {/* Boutons de mise en forme (non fonctionnels ici) */}
-                                      <Button
-                                        type="button"
-                                        size="icon"
-                                        variant="ghost"
-                                      >
-                                        <b>B</b>
-                                      </Button>
-                                      <Button
-                                        type="button"
-                                        size="icon"
-                                        variant="ghost"
-                                      >
-                                        <i>I</i>
-                                      </Button>
-                                      <Button
-                                        type="button"
-                                        size="icon"
-                                        variant="ghost"
-                                      >
-                                        <u>U</u>
-                                      </Button>
-                                      <Button
-                                        type="button"
-                                        size="icon"
-                                        variant="ghost"
-                                      >
-                                        •
-                                      </Button>
-                                      <Button
-                                        type="button"
-                                        size="icon"
-                                        variant="ghost"
-                                      >
-                                        1.
-                                      </Button>
-                                      <Button
-                                        type="button"
-                                        size="icon"
-                                        variant="ghost"
-                                      >
-                                        ≡
-                                      </Button>
-                                      <div className="flex-1" />
-                                      <Button
-                                        type="button"
-                                        variant="outline"
-                                        className="flex items-center gap-2"
-                                      >
-                                        <span>✨</span> Suggestions de l'IA
-                                      </Button>
-                                    </div>
                                     <textarea
-                                      className="w-full min-h-[80px] rounded border px-3 py-2 bg-violet-50"
+                                      className="w-full min-h-[80px] rounded-lg border border-blue-200 px-4 py-2 bg-blue-50 focus:ring-2 focus:ring-blue-400 text-base"
                                       placeholder="Commencez à rédiger ici..."
                                       value={c.description}
                                       onChange={(e) =>
@@ -1542,40 +1622,50 @@ const Editor = () => {
                                         )
                                       }
                                     />
-                                    <div className="flex justify-between mt-3">
+                                    <div className="flex justify-between mt-4">
                                       <Button
                                         type="button"
                                         variant="destructive"
+                                        className="rounded-full px-4 py-2 bg-red-100 text-red-700 hover:bg-red-200 font-bold flex items-center gap-2"
                                         onClick={() =>
                                           handleDeleteCertificate(idx)
                                         }
                                       >
-                                        🗑️
+                                        <span>🗑️</span> Supprimer
                                       </Button>
                                       <Button
                                         type="button"
                                         onClick={handleFinishCertificate}
-                                        className="bg-violet-700 text-white font-bold"
+                                        className="rounded-full px-6 py-2 bg-gradient-to-r from-violet-500 to-blue-500 text-white font-bold flex items-center gap-2 hover:scale-105 transition-transform"
                                       >
-                                        ✓ Terminé
+                                        <span>✓</span> Terminé
                                       </Button>
                                     </div>
                                   </>
                                 ) : (
-                                  <div className="flex items-center justify-between">
+                                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
                                     <div>
-                                      <div className="font-bold">{c.name}</div>
-                                      <div className="text-xs text-gray-500">
+                                      <div className="font-bold text-blue-900 text-lg flex items-center gap-2">
+                                        <span>📜</span>
+                                        {c.name}
+                                      </div>
+                                      <div className="text-xs text-gray-500 mt-1">
                                         {c.month && c.year
                                           ? `${c.month} ${c.year}`
                                           : ""}
                                         {c.current && " - ce jour"}
                                       </div>
+                                      {c.description && (
+                                        <div className="mt-2 text-gray-700 text-sm whitespace-pre-line">
+                                          {c.description}
+                                        </div>
+                                      )}
                                     </div>
                                     <Button
                                       type="button"
                                       size="sm"
                                       variant="outline"
+                                      className="rounded-full border-blue-300 text-blue-700 font-bold hover:bg-blue-50"
                                       onClick={() => handleEditCertificate(idx)}
                                     >
                                       Modifier
@@ -1584,13 +1674,15 @@ const Editor = () => {
                                 )}
                               </div>
                             ))}
-                            <Button
-                              type="button"
-                              variant="outline"
-                              onClick={handleAddCertificate}
-                            >
-                              + Ajouter un certificat
-                            </Button>
+                            <div className="flex justify-center">
+                              <Button
+                                type="button"
+                                onClick={handleAddCertificate}
+                                className="rounded-full px-8 py-3 bg-gradient-to-r from-blue-400 to-pink-400 text-white font-bold shadow-md hover:scale-105 transition-transform flex items-center gap-2 text-base"
+                              >
+                                <span>📜</span> + Ajouter un certificat
+                              </Button>
+                            </div>
                           </div>
                         )}
                         {key === "internship" && (
@@ -1598,15 +1690,15 @@ const Editor = () => {
                             {internships.map((int, idx) => (
                               <div
                                 key={idx}
-                                className="border rounded-lg p-4 mb-4 bg-white/90"
+                                className="border rounded-lg p-4 mb-4 bg-blue-50/60 hover:shadow-lg transition-all"
                               >
                                 {editingInternship === idx ? (
                                   <>
-                                    <label className="block font-medium mb-1">
+                                    <label className="block font-semibold text-violet-700 mb-1 text-base">
                                       Poste
                                     </label>
                                     <input
-                                      className="w-full mb-2 rounded border px-3 py-2 bg-violet-50"
+                                      className="w-full mb-2 rounded-lg border border-blue-200 px-4 py-2 bg-blue-50 focus:ring-2 focus:ring-violet-400 text-base"
                                       placeholder="Intitulé du poste"
                                       value={int.job}
                                       onChange={(e) =>
@@ -1618,11 +1710,11 @@ const Editor = () => {
                                     />
                                     <div className="flex gap-2 mb-2">
                                       <div className="flex-1">
-                                        <label className="block font-medium mb-1">
+                                        <label className="block font-semibold text-violet-700 mb-1 text-base">
                                           Employeur
                                         </label>
                                         <input
-                                          className="w-full rounded border px-3 py-2 bg-violet-50"
+                                          className="w-full rounded-lg border border-blue-200 px-4 py-2 bg-blue-50 focus:ring-2 focus:ring-violet-400 text-base"
                                           placeholder="Employeur"
                                           value={int.employer}
                                           onChange={(e) =>
@@ -1634,11 +1726,11 @@ const Editor = () => {
                                         />
                                       </div>
                                       <div className="flex-1">
-                                        <label className="block font-medium mb-1">
+                                        <label className="block font-semibold text-violet-700 mb-1 text-base">
                                           Ville
                                         </label>
                                         <input
-                                          className="w-full rounded border px-3 py-2 bg-violet-50"
+                                          className="w-full rounded-lg border border-blue-200 px-4 py-2 bg-blue-50 focus:ring-2 focus:ring-violet-400 text-base"
                                           placeholder="Ville"
                                           value={int.city}
                                           onChange={(e) =>
@@ -1650,170 +1742,114 @@ const Editor = () => {
                                         />
                                       </div>
                                     </div>
-                                    <div className="flex gap-2 mb-2 items-end">
-                                      <div>
-                                        <label className="block font-medium mb-1">
+                                    {/* Bloc dates stage corrigé */}
+                                    <div className="flex flex-col md:flex-row gap-6 mb-2 items-end">
+                                      <div className="flex flex-col gap-1 flex-1">
+                                        <label className="block font-semibold text-violet-700 mb-1 text-base">
                                           Date de début
                                         </label>
-                                        <div className="flex gap-1">
-                                          <select
-                                            className="rounded border px-2 py-1 bg-violet-50"
-                                            value={int.startMonth}
-                                            onChange={(e) =>
-                                              handleChangeInternship(
-                                                "startMonth",
-                                                e.target.value
-                                              )
-                                            }
-                                          >
-                                            <option value="">Mois</option>
-                                            {MONTHS.map((m) => (
-                                              <option key={m} value={m}>
-                                                {m}
-                                              </option>
-                                            ))}
-                                          </select>
-                                          <select
-                                            className="rounded border px-2 py-1 bg-violet-50"
-                                            value={int.startYear}
-                                            onChange={(e) =>
-                                              handleChangeInternship(
-                                                "startYear",
-                                                e.target.value
-                                              )
-                                            }
-                                          >
-                                            <option value="">Année</option>
-                                            {Array.from(
-                                              { length: 50 },
-                                              (_, i) => 2024 - i
-                                            ).map((y) => (
-                                              <option key={y} value={y}>
-                                                {y}
-                                              </option>
-                                            ))}
-                                          </select>
-                                        </div>
+                                        <select
+                                          className="rounded-lg border border-blue-200 px-2 py-1 bg-blue-50 focus:ring-2 focus:ring-violet-400 text-base mb-1"
+                                          value={int.startMonth}
+                                          onChange={(e) =>
+                                            handleChangeInternship(
+                                              "startMonth",
+                                              e.target.value
+                                            )
+                                          }
+                                        >
+                                          <option value="">Mois</option>
+                                          {MONTHS.map((m) => (
+                                            <option key={m} value={m}>
+                                              {m}
+                                            </option>
+                                          ))}
+                                        </select>
+                                        <select
+                                          className="rounded-lg border border-blue-200 px-2 py-1 bg-blue-50 focus:ring-2 focus:ring-violet-400 text-base"
+                                          value={int.startYear}
+                                          onChange={(e) =>
+                                            handleChangeInternship(
+                                              "startYear",
+                                              e.target.value
+                                            )
+                                          }
+                                        >
+                                          <option value="">Année</option>
+                                          {Array.from(
+                                            { length: 50 },
+                                            (_, i) => 2024 - i
+                                          ).map((y) => (
+                                            <option key={y} value={y}>
+                                              {y}
+                                            </option>
+                                          ))}
+                                        </select>
                                       </div>
-                                      <div>
-                                        <label className="block font-medium mb-1">
+                                      <div className="flex flex-col gap-1 flex-1">
+                                        <label className="block font-semibold text-violet-700 mb-1 text-base">
                                           Date de fin
                                         </label>
-                                        <div className="flex gap-1 items-center">
-                                          <select
-                                            className="rounded border px-2 py-1 bg-violet-50"
-                                            value={int.endMonth}
+                                        <select
+                                          className="rounded-lg border border-blue-200 px-2 py-1 bg-blue-50 focus:ring-2 focus:ring-violet-400 text-base mb-1"
+                                          value={int.endMonth}
+                                          onChange={(e) =>
+                                            handleChangeInternship(
+                                              "endMonth",
+                                              e.target.value
+                                            )
+                                          }
+                                          disabled={int.current}
+                                        >
+                                          <option value="">Mois</option>
+                                          {MONTHS.map((m) => (
+                                            <option key={m} value={m}>
+                                              {m}
+                                            </option>
+                                          ))}
+                                        </select>
+                                        <select
+                                          className="rounded-lg border border-blue-200 px-2 py-1 bg-blue-50 focus:ring-2 focus:ring-violet-400 text-base"
+                                          value={int.endYear}
+                                          onChange={(e) =>
+                                            handleChangeInternship(
+                                              "endYear",
+                                              e.target.value
+                                            )
+                                          }
+                                          disabled={int.current}
+                                        >
+                                          <option value="">Année</option>
+                                          {Array.from(
+                                            { length: 50 },
+                                            (_, i) => 2024 - i
+                                          ).map((y) => (
+                                            <option key={y} value={y}>
+                                              {y}
+                                            </option>
+                                          ))}
+                                        </select>
+                                        <label className="ml-2 flex items-center gap-1 text-xs mt-1">
+                                          <input
+                                            type="checkbox"
+                                            checked={int.current}
                                             onChange={(e) =>
                                               handleChangeInternship(
-                                                "endMonth",
-                                                e.target.value
+                                                "current",
+                                                e.target.checked
                                               )
                                             }
-                                            disabled={int.current}
-                                          >
-                                            <option value="">Mois</option>
-                                            {MONTHS.map((m) => (
-                                              <option key={m} value={m}>
-                                                {m}
-                                              </option>
-                                            ))}
-                                          </select>
-                                          <select
-                                            className="rounded border px-2 py-1 bg-violet-50"
-                                            value={int.endYear}
-                                            onChange={(e) =>
-                                              handleChangeInternship(
-                                                "endYear",
-                                                e.target.value
-                                              )
-                                            }
-                                            disabled={int.current}
-                                          >
-                                            <option value="">Année</option>
-                                            {Array.from(
-                                              { length: 50 },
-                                              (_, i) => 2024 - i
-                                            ).map((y) => (
-                                              <option key={y} value={y}>
-                                                {y}
-                                              </option>
-                                            ))}
-                                          </select>
-                                          <label className="ml-2 flex items-center gap-1 text-xs">
-                                            <input
-                                              type="checkbox"
-                                              checked={int.current}
-                                              onChange={(e) =>
-                                                handleChangeInternship(
-                                                  "current",
-                                                  e.target.checked
-                                                )
-                                              }
-                                            />{" "}
-                                            ce jour
-                                          </label>
-                                        </div>
+                                          />{" "}
+                                          ce jour
+                                        </label>
                                       </div>
                                     </div>
-                                    <label className="block font-medium mb-1 mt-2">
+                                    <label className="block font-semibold text-violet-700 mb-1 text-base mt-2">
                                       Description
                                     </label>
-                                    <div className="flex items-center gap-2 mb-2">
-                                      {/* Boutons de mise en forme (non fonctionnels ici) */}
-                                      <Button
-                                        type="button"
-                                        size="icon"
-                                        variant="ghost"
-                                      >
-                                        <b>B</b>
-                                      </Button>
-                                      <Button
-                                        type="button"
-                                        size="icon"
-                                        variant="ghost"
-                                      >
-                                        <i>I</i>
-                                      </Button>
-                                      <Button
-                                        type="button"
-                                        size="icon"
-                                        variant="ghost"
-                                      >
-                                        <u>U</u>
-                                      </Button>
-                                      <Button
-                                        type="button"
-                                        size="icon"
-                                        variant="ghost"
-                                      >
-                                        •
-                                      </Button>
-                                      <Button
-                                        type="button"
-                                        size="icon"
-                                        variant="ghost"
-                                      >
-                                        1.
-                                      </Button>
-                                      <Button
-                                        type="button"
-                                        size="icon"
-                                        variant="ghost"
-                                      >
-                                        ≡
-                                      </Button>
-                                      <div className="flex-1" />
-                                      <Button
-                                        type="button"
-                                        variant="outline"
-                                        className="flex items-center gap-2"
-                                      >
-                                        <span>✨</span> Suggestions de l'IA
-                                      </Button>
-                                    </div>
                                     <textarea
-                                      className="w-full min-h-[80px] rounded border px-3 py-2 bg-violet-50"
-                                      placeholder="Commencez à rédiger ici..."
+                                      className="w-full min-h-[80px] rounded-lg border border-blue-200 px-4 py-2 bg-blue-50 focus:ring-2 focus:ring-violet-400 text-base"
+                                      placeholder="Description du stage, missions principales, etc."
                                       value={int.description}
                                       onChange={(e) =>
                                         handleChangeInternship(
@@ -1829,13 +1865,14 @@ const Editor = () => {
                                         onClick={() =>
                                           handleDeleteInternship(idx)
                                         }
+                                        className="rounded-full px-4 py-2"
                                       >
                                         🗑️
                                       </Button>
                                       <Button
                                         type="button"
                                         onClick={handleFinishInternship}
-                                        className="bg-violet-700 text-white font-bold"
+                                        className="rounded-full bg-gradient-to-r from-violet-500 to-blue-400 text-white font-bold shadow-md hover:scale-105 transition-transform px-6"
                                       >
                                         ✓ Terminé
                                       </Button>
@@ -1843,18 +1880,15 @@ const Editor = () => {
                                   </>
                                 ) : (
                                   <div className="flex items-center justify-between">
-                                    <div>
-                                      <div className="font-bold">{int.job}</div>
-                                      <div className="text-xs text-gray-500">
-                                        {int.employer}{" "}
-                                        {int.city && `- ${int.city}`}
-                                      </div>
+                                    <div className="font-bold text-violet-900 text-lg">
+                                      {int.job}
                                     </div>
                                     <Button
                                       type="button"
                                       size="sm"
                                       variant="outline"
                                       onClick={() => handleEditInternship(idx)}
+                                      className="rounded-full border-violet-300 text-violet-700 font-semibold px-4 py-2 hover:bg-violet-100"
                                     >
                                       Modifier
                                     </Button>
@@ -1865,6 +1899,7 @@ const Editor = () => {
                             <Button
                               type="button"
                               variant="outline"
+                              className="rounded-full bg-gradient-to-r from-violet-400 to-blue-400 text-white font-bold shadow-md hover:scale-105 transition-transform px-4 py-2"
                               onClick={handleAddInternship}
                             >
                               + Ajouter un stage
@@ -1873,13 +1908,16 @@ const Editor = () => {
                         )}
                         {key === "signature" && (
                           <div className="space-y-6">
-                            <div className="flex gap-4">
+                            <div className="text-xl font-bold text-violet-700 mb-2">
+                              Signature
+                            </div>
+                            <div className="flex flex-col md:flex-row gap-4">
                               <div className="flex-1">
-                                <label className="block font-medium mb-1">
+                                <label className="block font-semibold text-violet-700 mb-1 text-base">
                                   Ville
                                 </label>
                                 <input
-                                  className="w-full rounded border px-3 py-2 bg-violet-50"
+                                  className="w-full rounded-lg border border-blue-200 px-4 py-2 bg-blue-50 focus:ring-2 focus:ring-violet-400 text-base"
                                   placeholder="Ville"
                                   value={signature.city}
                                   onChange={(e) =>
@@ -1891,12 +1929,12 @@ const Editor = () => {
                                 />
                               </div>
                               <div className="flex-1">
-                                <label className="block font-medium mb-1">
+                                <label className="block font-semibold text-violet-700 mb-1 text-base">
                                   Date
                                 </label>
                                 <input
                                   type="date"
-                                  className="w-full rounded border px-3 py-2 bg-violet-50"
+                                  className="w-full rounded-lg border border-blue-200 px-4 py-2 bg-blue-50 focus:ring-2 focus:ring-violet-400 text-base"
                                   value={signature.date}
                                   onChange={(e) =>
                                     handleChangeSignature(
@@ -1907,44 +1945,38 @@ const Editor = () => {
                                 />
                               </div>
                             </div>
-                            <div>
-                              <label className="block font-medium mb-1">
-                                Signature
-                              </label>
-                              <div
-                                className="mt-2 border rounded bg-gray-100 p-2 flex items-center justify-center min-h-[180px] cursor-pointer hover:bg-gray-200 transition"
-                                onClick={() => setSignatureModalOpen(true)}
-                                style={{ height: 180 }}
-                              >
-                                {signature.image ? (
-                                  <img
-                                    src={signature.image}
-                                    alt="Signature"
-                                    className="max-h-32 max-w-full object-contain"
-                                  />
-                                ) : (
-                                  <svg
-                                    width="48"
-                                    height="48"
-                                    fill="none"
-                                    viewBox="0 0 48 48"
-                                    stroke="currentColor"
-                                    className="text-gray-400"
-                                  >
-                                    <path
-                                      d="M16 32l16-16M20 36h8M12 44h24a4 4 0 004-4V12a4 4 0 00-4-4H12a4 4 0 00-4 4v28a4 4 0 004 4z"
-                                      strokeWidth="2"
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                    />
-                                    <path
-                                      d="M16 32l-2 6 6-2"
-                                      strokeWidth="2"
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                    />
-                                  </svg>
-                                )}
+                            <div className="flex flex-col items-center justify-center">
+                              <div className="w-full flex items-center justify-center">
+                                <div className="w-full max-w-xs min-h-[120px] bg-blue-50 border-2 border-dashed border-violet-300 rounded-xl shadow-md flex flex-col items-center justify-center p-4">
+                                  {signature.image ? (
+                                    <>
+                                      <img
+                                        src={signature.image}
+                                        alt="Signature"
+                                        className="max-h-20 object-contain mx-auto mb-2"
+                                      />
+                                      <Button
+                                        type="button"
+                                        onClick={() =>
+                                          setSignatureModalOpen(true)
+                                        }
+                                        className="rounded-full bg-gradient-to-r from-violet-500 to-blue-400 text-white font-bold shadow-md hover:scale-105 transition-transform px-6 py-2"
+                                      >
+                                        ✍️ Modifier
+                                      </Button>
+                                    </>
+                                  ) : (
+                                    <Button
+                                      type="button"
+                                      onClick={() =>
+                                        setSignatureModalOpen(true)
+                                      }
+                                      className="rounded-full bg-gradient-to-r from-violet-500 to-blue-400 text-white font-bold shadow-md hover:scale-105 transition-transform px-6 py-2"
+                                    >
+                                      ✍️ Signer
+                                    </Button>
+                                  )}
+                                </div>
                               </div>
                               <SignatureModal
                                 open={signatureModalOpen}
@@ -1952,11 +1984,6 @@ const Editor = () => {
                                 onSave={handleSignatureModalSave}
                               />
                             </div>
-                          </div>
-                        )}
-                        {key !== "profile" && (
-                          <div className="text-gray-400 italic">
-                            Formulaire à venir pour cette section...
                           </div>
                         )}
                       </AccordionContent>
@@ -1974,6 +2001,7 @@ const Editor = () => {
                 variant="outline"
                 size="sm"
                 onClick={() => addLeftSection(s)}
+                className="bg-gradient-to-r from-blue-100 to-pink-100 text-blue-700 font-semibold border-blue-200 hover:scale-105 transition-transform"
               >
                 + {ALL_SECTIONS.find((sec) => sec.key === s)?.label}
               </Button>
@@ -1984,17 +2012,66 @@ const Editor = () => {
                 variant="outline"
                 size="sm"
                 onClick={() => addRightSection(s)}
+                className="bg-gradient-to-r from-pink-100 to-blue-100 text-pink-700 font-semibold border-pink-200 hover:scale-105 transition-transform"
               >
                 + {ALL_SECTIONS.find((sec) => sec.key === s)?.label}
               </Button>
             ))}
           </div>
-          {/* Bouton de téléchargement (à brancher plus tard) */}
-          <Button className="mt-6 w-full bg-indigo-700 hover:bg-indigo-800 text-white font-bold">
-            Télécharger
+          {/* Espace bas mobile pour éviter que la barre d'actions fixe ne recouvre les champs */}
+          <div className="md:hidden h-28" />
+
+          {/* Bouton de téléchargement (desktop uniquement) */}
+          <Button
+            onClick={handlePrint}
+            className="hidden md:block mt-6 w-full bg-gradient-to-r from-blue-500 to-pink-400 hover:from-blue-600 hover:to-pink-500 text-white font-bold text-lg py-4 rounded-xl shadow-xl transition-all"
+          >
+            <span>⬇️</span> Télécharger en PDF
           </Button>
         </div>
       </div>
+
+      {/* Barre d'actions mobile: prévisualiser et télécharger */}
+      <div className="md:hidden fixed bottom-4 left-0 right-0 px-4 z-[70]">
+        <div className="flex gap-3">
+          <Button
+            onClick={() => setMobilePreviewOpen(true)}
+            className="flex-1 bg-gradient-to-r from-blue-400 to-pink-400 text-white font-bold py-4 rounded-full shadow-xl"
+          >
+            👀 Prévisualiser
+          </Button>
+          <Button
+            onClick={handlePrint}
+            className="flex-1 bg-gradient-to-r from-blue-500 to-pink-500 text-white font-bold py-4 rounded-full shadow-xl"
+          >
+            ⬇️ Télécharger
+          </Button>
+        </div>
+      </div>
+
+      {/* Overlay de prévisualisation plein écran (mobile) */}
+      {mobilePreviewOpen && (
+        <div className="md:hidden fixed inset-0 z-[80] bg-black/60">
+          <div className="absolute inset-0 flex flex-col bg-white">
+            <div className="p-3 flex items-center justify-between border-b">
+              <Button
+                variant="outline"
+                onClick={() => setMobilePreviewOpen(false)}
+                className="rounded-full"
+              >
+                ✖ Fermer
+              </Button>
+            </div>
+            <div className="flex-1 overflow-auto p-3">
+              <PreviewComponent
+                cvData={cvData}
+                leftSections={leftSections}
+                rightSections={rightSections}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

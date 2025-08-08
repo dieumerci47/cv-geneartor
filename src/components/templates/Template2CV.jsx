@@ -1,6 +1,6 @@
 import React from "react";
 
-export default function Template2CV({ cvData }) {
+const Template2CV = React.forwardRef(function Template2CV({ cvData }, ref) {
   const {
     personal,
     profile,
@@ -11,7 +11,10 @@ export default function Template2CV({ cvData }) {
     interests,
   } = cvData;
   return (
-    <div className="bg-white w-[900px] mx-auto rounded-xl shadow-lg overflow-hidden text-[#222] font-sans flex">
+    <div
+      ref={ref}
+      className="bg-white w-[900px] mx-auto rounded-xl shadow-lg overflow-hidden text-[#222] font-sans flex"
+    >
       {/* Colonne gauche (bleue) */}
       <div className="w-[270px] bg-[#3a7ec1] text-white flex flex-col min-h-full">
         <div className="flex flex-col items-center px-6 pt-8 pb-4">
@@ -253,7 +256,9 @@ export default function Template2CV({ cvData }) {
       </div>
     </div>
   );
-}
+});
+
+export default Template2CV;
 
 function formatDateRange(obj) {
   // Ex: de févr. 2013 à mai 2020

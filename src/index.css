@@ -117,3 +117,16 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Removed aggressive print-hiding rules that hid content in the print iframe */
+@media print {
+  /* Ensure the hidden print container is laid out normally in the print iframe */
+  #print-root {
+    display: block !important;
+    position: static !important;
+    left: auto !important;
+    top: auto !important;
+    height: auto !important;
+    width: auto !important;
+  }
+}

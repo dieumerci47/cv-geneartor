@@ -281,10 +281,16 @@ function isEmpty(cvData) {
   );
 }
 
-export default function Template1CV({ cvData, leftSections, rightSections }) {
+const Template1CV = React.forwardRef(function Template1CV(
+  { cvData, leftSections, rightSections },
+  ref
+) {
   if (isEmpty(cvData)) {
     return (
-      <div className="bg-gradient-to-br from-[#e3e6f5] via-[#b3d0f7] to-[#eec6e6] w-full h-[700px] rounded-xl shadow-lg flex items-center justify-center"></div>
+      <div
+        ref={ref}
+        className="bg-gradient-to-br from-[#e3e6f5] via-[#b3d0f7] to-[#eec6e6] w-full h-[700px] rounded-xl shadow-lg flex items-center justify-center"
+      ></div>
     );
   }
   const {
@@ -652,6 +658,13 @@ export default function Template1CV({ cvData, leftSections, rightSections }) {
             className="max-h-[60px] object-contain inline-block align-middle bg-none border-none shadow-none p-0 m-0"
             data-marker="signature-image"
           />
+          {(signature.city || signature.date) && (
+            <div className="text-sm text-gray-500 italic mt-2 w-full text-left pl-1">
+              {signature.city && <span>{signature.city}</span>}
+              {signature.city && signature.date && ". "}
+              {signature.date && <span>{formatFullDate(signature.date)}</span>}
+            </div>
+          )}
         </div>
       );
     }
@@ -680,7 +693,10 @@ export default function Template1CV({ cvData, leftSections, rightSections }) {
   }
 
   return (
-    <div className="bg-white w-full max-w-3xl mx-auto rounded-2xl shadow-2xl overflow-hidden text-[#222] font-sans flex flex-col md:flex-row min-h-[700px]">
+    <div
+      ref={ref}
+      className="bg-white w-full max-w-3xl mx-auto rounded-2xl shadow-2xl overflow-hidden text-[#222] font-sans flex flex-col md:flex-row min-h-[700px]"
+    >
       {/* Colonne gauche élargie */}
       <div className="w-full md:w-[45%] lg:w-[42%] bg-[#f5f8fc] text-[#223A5E] flex flex-col items-stretch py-0 px-0 gap-0 relative border-r border-gray-200">
         {/* Nom/prénom en haut, plus petit, sur une ligne */}
@@ -757,11 +773,59 @@ export default function Template1CV({ cvData, leftSections, rightSections }) {
       </div>
     </div>
   );
-}
+});
+
+export default Template1CV;
 
 function formatDate(month, year, current) {
   if (current) return "ce jour";
-  if (month && year) return `${month}/${year}`;
+  if (month && year) {
+    // Affiche le mois en toutes lettres
+    const MONTHS = [
+      "janvier",
+      "février",
+      "mars",
+      "avril",
+      "mai",
+      "juin",
+      "juillet",
+      "août",
+      "septembre",
+      "octobre",
+      "novembre",
+      "décembre",
+    ];
+    let monthName = month;
+    // Si le mois est un nombre (1-12), convertit en nom
+    if (!isNaN(Number(month))) {
+      const idx = Number(month) - 1;
+      if (idx >= 0 && idx < 12) monthName = MONTHS[idx];
+    }
+    return `${monthName} ${year}`;
+  }
   if (year) return year;
   return "";
+}
+
+function formatFullDate(dateStr) {
+  if (!dateStr) return "";
+  const d = new Date(dateStr);
+  if (isNaN(d)) return dateStr;
+  const day = d.getDate().toString().padStart(2, "0");
+  const month = [
+    "janvier",
+    "février",
+    "mars",
+    "avril",
+    "mai",
+    "juin",
+    "juillet",
+    "août",
+    "septembre",
+    "octobre",
+    "novembre",
+    "décembre",
+  ][d.getMonth()];
+  const year = d.getFullYear();
+  return `${day} ${month} ${year}`;
 }
