@@ -48,7 +48,7 @@ export async function listCvs() {
 
   const { data, error } = await supabase
     .from("cvs")
-    .select("id,title,template,updated_at,created_at")
+    .select("id,title,template,updated_at,created_at,data")
     .eq("user_id", userId)
     .order("updated_at", { ascending: false });
   if (error) throw error;
