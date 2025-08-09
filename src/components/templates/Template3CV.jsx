@@ -1,7 +1,42 @@
 import React from "react";
 
 const Template3CV = React.forwardRef(function Template3CV({ cvData }, ref) {
-  const { personal, profile, experiences, educations } = cvData;
+  const {
+    personal = {},
+    profile,
+    experiences = [],
+    educations = [],
+  } = cvData || {};
+
+  function isEmpty() {
+    const hasPersonal = personal && Object.values(personal).some((v) => v);
+    const hasProfile = typeof profile === "string" && profile.trim() !== "";
+    const hasExp =
+      Array.isArray(experiences) &&
+      experiences.some((e) => e && Object.values(e).some((v) => v));
+    const hasEdu =
+      Array.isArray(educations) &&
+      educations.some((e) => e && Object.values(e).some((v) => v));
+    return !(hasPersonal || hasProfile || hasExp || hasEdu);
+  }
+
+  if (isEmpty()) {
+    return (
+      <div
+        ref={ref}
+        className="bg-gradient-to-br from-[#e3e6f5] via-[#b3d0f7] to-[#eec6e6] w-[900px] h-[700px] mx-auto rounded-xl shadow-lg overflow-hidden flex items-center justify-center"
+      >
+        <div className="text-center px-6">
+          <div className="text-xl font-bold text-[#1f2937]/80">
+            Aperçu du CV
+          </div>
+          <div className="mt-2 text-sm text-[#1f2937]/70">
+            Commencez à remplir le formulaire à droite pour voir l’aperçu ici.
+          </div>
+        </div>
+      </div>
+    );
+  }
   return (
     <div
       ref={ref}

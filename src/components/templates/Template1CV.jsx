@@ -290,7 +290,16 @@ const Template1CV = React.forwardRef(function Template1CV(
       <div
         ref={ref}
         className="bg-gradient-to-br from-[#e3e6f5] via-[#b3d0f7] to-[#eec6e6] w-full h-[700px] rounded-xl shadow-lg flex items-center justify-center"
-      ></div>
+      >
+        <div className="text-center px-6">
+          <div className="text-xl font-bold text-[#223A5E]/80">
+            Aperçu du CV
+          </div>
+          <div className="mt-2 text-sm text-[#223A5E]/70">
+            Commencez à remplir le formulaire à droite pour voir l’aperçu ici.
+          </div>
+        </div>
+      </div>
     );
   }
   const {

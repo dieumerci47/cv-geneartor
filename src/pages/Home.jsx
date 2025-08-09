@@ -130,7 +130,7 @@ const Home = () => {
                 <Button
                   className="absolute bottom-6 left-1/2 -translate-x-1/2 px-8 py-3 text-base font-bold bg-pink-400 hover:bg-pink-500 text-white shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none group-hover:pointer-events-auto"
                   onClick={() => {
-                    const targetIdx = idx === 1 ? 3 : idx; // image 2 -> Template4 (index 3)
+                    const targetIdx = idx === 1 ? 2 : idx === 2 ? 3 : idx; // image 2 -> Template4 (idx 2), image 3 -> Template3 (idx 3)
                     navigate("/editor", { state: { templateIdx: targetIdx } });
                   }}
                 >

@@ -16,6 +16,7 @@ import { getCv } from "@/lib/cvRepository";
 import Template1CV from "@/components/templates/Template1CV";
 import Template2CV from "@/components/templates/Template2CV";
 import Template3CV from "@/components/templates/Template3CV";
+import Template4CV from "@/components/templates/Template4CV";
 import { useRef } from "react";
 import { useReactToPrint } from "react-to-print";
 
@@ -195,29 +196,49 @@ const Dashboard = () => {
                   "signature",
                   "certificates",
                 ];
-                if (tpl === "0" || tpl === "1")
-                  return (
-                    <Template1CV
-                      cvData={data}
-                      leftSections={left}
-                      rightSections={right}
-                    />
-                  );
-                if (tpl === "2")
-                  return (
-                    <Template2CV
-                      cvData={data}
-                      leftSections={left}
-                      rightSections={right}
-                    />
-                  );
-                return (
-                  <Template3CV
-                    cvData={data}
-                    leftSections={left}
-                    rightSections={right}
-                  />
-                );
+
+                switch (tpl) {
+                  case "0":
+                    return (
+                      <Template1CV
+                        cvData={data}
+                        leftSections={left}
+                        rightSections={right}
+                      />
+                    );
+                  case "1":
+                    return (
+                      <Template2CV
+                        cvData={data}
+                        leftSections={left}
+                        rightSections={right}
+                      />
+                    );
+                  case "2":
+                    return (
+                      <Template4CV
+                        cvData={data}
+                        leftSections={left}
+                        rightSections={right}
+                      />
+                    );
+                  case "3":
+                    return (
+                      <Template3CV
+                        cvData={data}
+                        leftSections={left}
+                        rightSections={right}
+                      />
+                    );
+                  default:
+                    return (
+                      <Template1CV
+                        cvData={data}
+                        leftSections={left}
+                        rightSections={right}
+                      />
+                    );
+                }
               };
 
               return (
@@ -286,7 +307,7 @@ const Dashboard = () => {
                       variant="destructive"
                       className="rounded-full transition-all duration-200 hover:shadow-md hover:-translate-y-0.5"
                       onClick={async () => {
-                        if (!confirm("Supprimer ce CV ?")) return;
+                        // if (!confirm("Supprimer ce CV ?")) return;
                         try {
                           await deleteCv(cv.id);
                           setItems((prev) =>

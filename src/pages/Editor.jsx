@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { useLocation, useSearchParams } from "react-router-dom";
+import { useLocation, useSearchParams, useNavigate } from "react-router-dom";
 import { useReactToPrint } from "react-to-print";
 import {
   Accordion,
@@ -35,9 +35,9 @@ import { upsertCv, getCv } from "@/lib/cvRepository";
 
 const TEMPLATES = [
   { label: "Template 1", component: Template1CV },
-  { label: "Template 2", component: Template2CV },
+  { label: "Template 0", component: Template2CV },
+  { label: "Template 2", component: Template4CV },
   { label: "Template 3", component: Template3CV },
-  { label: "Template 4", component: Template4CV },
 ];
 
 const ALL_SECTIONS = [
@@ -122,6 +122,7 @@ function SortableAccordionItem({ id, children }) {
 
 const Editor = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   // Priorité : query param > state > 0
   let initialTemplate = 0;
@@ -609,24 +610,36 @@ const Editor = () => {
         {/* Formulaire à droite : scrollable sur desktop, style hackathon */}
         <div className="w-full md:w-1/2 flex flex-col gap-8 max-h-[calc(100vh-64px)] overflow-y-auto pr-1 bg-gradient-to-br from-white/80 via-blue-50 to-pink-50 rounded-2xl shadow-xl p-4 md:p-8 border border-blue-100">
           {/* En-tête: titre, template, sauvegarde */}
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-2">
-            <input
-              className="flex-1 border rounded px-3 py-2 bg-white shadow focus:ring-2 focus:ring-blue-400 text-base"
-              placeholder="Titre du CV (ex: Développeur Frontend)"
-              value={cvTitle}
-              onChange={(e) => setCvTitle(e.target.value)}
-            />
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
+            <div className="flex items-center gap-2 flex-1 min-w-[260px]">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => navigate(-1)}
+                className="rounded-full transition-all duration-200 hover:shadow-md hover:-translate-y-0.5"
+              >
+                ← Retour
+              </Button>
+              <input
+                className="flex-1 border rounded px-3 py-2 bg-white shadow focus:ring-2 focus:ring-blue-400 text-base"
+                placeholder="Titre du CV"
+                value={cvTitle}
+                onChange={(e) => setCvTitle(e.target.value)}
+              />
+            </div>
             <div className="flex items-center gap-2">
               <select
                 className="border rounded px-3 py-2 bg-white shadow focus:ring-2 focus:ring-blue-400 text-base font-semibold"
                 value={selectedTemplate}
                 onChange={(e) => setSelectedTemplate(Number(e.target.value))}
               >
-                {TEMPLATES.map((tpl, idx) => (
-                  <option key={idx} value={idx}>
-                    {tpl.label}
-                  </option>
-                ))}
+                {TEMPLATES.map((tpl, idx) =>
+                  idx === 1 ? null : (
+                    <option key={idx} value={idx}>
+                      {tpl.label}
+                    </option>
+                  )
+                )}
               </select>
               <Button
                 disabled={saving}

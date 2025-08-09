@@ -32,6 +32,57 @@ const Template4CV = React.forwardRef(function Template4CV(
 
   const fullName = [personal.prenom, personal.nom].filter(Boolean).join(" ");
 
+  const isEmpty = (() => {
+    const hasPersonal = personal && Object.values(personal).some((v) => v);
+    const hasProfile = typeof profile === "string" && profile.trim() !== "";
+    const hasExp =
+      Array.isArray(experiences) &&
+      experiences.some((e) => e && Object.values(e).some((v) => v));
+    const hasEdu =
+      Array.isArray(educations) &&
+      educations.some((e) => e && Object.values(e).some((v) => v));
+    const hasLang =
+      Array.isArray(languages) && languages.some((l) => l && l.name);
+    const hasSkills = Array.isArray(skills) && skills.some((s) => s && s.name);
+    const hasInterests = Array.isArray(interests) && interests.length > 0;
+    const hasCert =
+      Array.isArray(certificates) && certificates.some((c) => c && c.name);
+    const hasIntern =
+      Array.isArray(internships) &&
+      internships.some((i) => i && Object.values(i).some((v) => v));
+    const hasSign = signature && signature.image;
+    return !(
+      hasPersonal ||
+      hasProfile ||
+      hasExp ||
+      hasEdu ||
+      hasLang ||
+      hasSkills ||
+      hasInterests ||
+      hasCert ||
+      hasIntern ||
+      hasSign
+    );
+  })();
+
+  if (isEmpty) {
+    return (
+      <div
+        ref={ref}
+        className="bg-gradient-to-br from-[#e3e6f5] via-[#b3d0f7] to-[#eec6e6] w-[900px] h-[700px] mx-auto rounded-xl shadow-lg overflow-hidden flex items-center justify-center"
+      >
+        <div className="text-center px-6">
+          <div className="text-xl font-bold text-[#1f2937]/80">
+            Aperçu du CV
+          </div>
+          <div className="mt-2 text-sm text-[#1f2937]/70">
+            Commencez à remplir le formulaire à droite pour voir l’aperçu ici.
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       ref={ref}
