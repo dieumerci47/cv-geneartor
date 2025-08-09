@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useLocation, useSearchParams } from "react-router-dom";
 import { useReactToPrint } from "react-to-print";
 import {
@@ -31,7 +31,7 @@ import Template2CV from "../components/templates/Template2CV";
 import Template3CV from "../components/templates/Template3CV";
 import Template4CV from "../components/templates/Template4CV";
 import SignatureModal from "@/components/SignatureModal";
-import { upsertCv } from "@/lib/cvRepository";
+import { upsertCv, getCv } from "@/lib/cvRepository";
 
 const TEMPLATES = [
   { label: "Template 1", component: Template1CV },
@@ -126,6 +126,7 @@ const Editor = () => {
   // Priorité : query param > state > 0
   let initialTemplate = 0;
   const queryTpl = searchParams.get("template");
+  const queryCvId = searchParams.get("cv");
   if (queryTpl && !isNaN(Number(queryTpl))) initialTemplate = Number(queryTpl);
   else if (location.state && typeof location.state.templateIdx === "number")
     initialTemplate = location.state.templateIdx;
@@ -154,7 +155,7 @@ const Editor = () => {
   );
   const [open, setOpen] = useState("personal");
   const [saving, setSaving] = useState(false);
-  const [cvId, setCvId] = useState(null);
+  const [cvId, setCvId] = useState(queryCvId || null);
   const [cvTitle, setCvTitle] = useState("");
   // const [selectedTemplate, setSelectedTemplate] = useState(0);
 
@@ -262,9 +263,14 @@ const Editor = () => {
     setPersonalValues((v) => ({ ...v, [key]: value }));
   };
   const handlePersonalPhotoChange = (e) => {
-    if (e.target.files && e.target.files[0]) {
-      setPersonalPhoto(URL.createObjectURL(e.target.files[0]));
-    }
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      // data:image/...;base64,xxxx
+      setPersonalPhoto(String(reader.result));
+    };
+    reader.readAsDataURL(file);
   };
   const handleAddPersonalField = (field) => {
     setPersonalFields([...personalFields, field]);
@@ -516,6 +522,40 @@ const Editor = () => {
       date: signature.date,
     },
   };
+
+  // Pré-chargement des données si ?cv=ID présent
+  useEffect(() => {
+    (async () => {
+      if (!cvId) return;
+      try {
+        const row = await getCv(cvId);
+        if (row?.template && !isNaN(Number(row.template))) {
+          setSelectedTemplate(Number(row.template));
+        }
+        if (row?.title) setCvTitle(row.title);
+        const d = row?.data || {};
+        const p = d.personal || {};
+        if (p.photo) setPersonalPhoto(p.photo);
+        const { photo: _discard, ...rest } = p;
+        setPersonalValues(rest);
+        setProfileValue(d.profile || "");
+        setEducations(Array.isArray(d.educations) ? d.educations : []);
+        setExperiences(Array.isArray(d.experiences) ? d.experiences : []);
+        setSkills(Array.isArray(d.skills) ? d.skills : []);
+        setLanguages(Array.isArray(d.languages) ? d.languages : []);
+        setInternships(Array.isArray(d.internships) ? d.internships : []);
+        setCertificates(Array.isArray(d.certificates) ? d.certificates : []);
+        setInterests(Array.isArray(d.interests) ? d.interests : []);
+        setSignature({
+          image: d.signature?.image || null,
+          city: d.signature?.city || "",
+          date: d.signature?.date || "",
+        });
+      } catch (e) {
+        console.error("Erreur lors du chargement du CV", e);
+      }
+    })();
+  }, [cvId]);
 
   const PreviewComponent =
     TEMPLATES[selectedTemplate]?.component || LivePreviewCV;

@@ -9,6 +9,7 @@ import React from "react";
 // Chaque section (expérience, formation) s'affiche en grille 2 colonnes: période à gauche, contenu à droite.
 
 const HEADER_COLOR = "#2f6cc6"; // bleu vif proche du rendu PDF
+const HEADER_BG = "#eaf3ff"; // fond bleuté clair pour l'en-tête
 const SECTION_TITLE_COLOR = "#3a7bd5";
 const EMPLOYER_COLOR = "#3a7bd5";
 
@@ -37,7 +38,10 @@ const Template4CV = React.forwardRef(function Template4CV(
       className="bg-white w-[900px] mx-auto rounded-xl shadow-xl overflow-hidden text-[#1f2937] font-sans"
     >
       {/* En-tête */}
-      <div className="px-8 pt-8 pb-4 border-b border-gray-200 relative">
+      <div
+        className="px-8 pt-8 pb-4 border-b border-gray-200 relative"
+        style={{ backgroundColor: HEADER_BG }}
+      >
         {/* Photo */}
         {personal.photo && (
           <img
@@ -86,6 +90,18 @@ const Template4CV = React.forwardRef(function Template4CV(
           {personal.site && (
             <InfoItem icon={GlobeIcon} label={personal.site} marker="site" />
           )}
+          {personal.sexe && (
+            <div className="flex items-center gap-2" data-marker="sexe">
+              <span className="inline-block w-[10px] h-[10px] rounded-sm bg-[#2f6cc6]" />
+              <span>Sexe: {personal.sexe}</span>
+            </div>
+          )}
+          {personal.emploi && (
+            <div className="flex items-center gap-2" data-marker="emploi">
+              <span className="inline-block w-[10px] h-[10px] rounded-sm bg-[#2f6cc6]" />
+              <span>Emploi recherché: {personal.emploi}</span>
+            </div>
+          )}
         </div>
 
         {/* Profil */}
@@ -101,10 +117,19 @@ const Template4CV = React.forwardRef(function Template4CV(
 
       {/* Corps — rendu dynamique par rang selon drag & drop */}
       <div className="px-8 py-8 space-y-10">
-        {(rightSections || DEFAULT_RIGHT)
-          .concat(leftSections || DEFAULT_LEFT)
-          .filter((key) => key !== "personal")
-          .map((key, idx) => {
+        {(() => {
+          const combined = (rightSections || DEFAULT_RIGHT).concat(
+            leftSections || DEFAULT_LEFT
+          );
+          const sanitized = combined.filter(
+            (key) => key !== "personal" && key !== "profile"
+          );
+          const priority = ["languages", "skills", "interests"]; // en premier
+          const ordered = [
+            ...priority.filter((k) => sanitized.includes(k)),
+            ...sanitized.filter((k) => !priority.includes(k)),
+          ];
+          return ordered.map((key, idx) => {
             const content = renderSectionContent({
               key,
               profile,
@@ -121,15 +146,16 @@ const Template4CV = React.forwardRef(function Template4CV(
             return (
               <div
                 key={`${key}-${idx}`}
-                className="grid grid-cols-[260px,1fr] gap-6"
+                className="grid grid-cols-[220px,1fr] gap-4 items-start"
               >
-                <div className="text-sm font-semibold text-gray-600 pt-1">
+                <div className="text-sm font-semibold text-gray-600 pt-1 pr-3 border-r border-blue-100">
                   <SectionTitle>{getSectionLabel(key)}</SectionTitle>
                 </div>
-                <div>{content}</div>
+                <div className="pl-4">{content}</div>
               </div>
             );
-          })}
+          });
+        })()}
       </div>
     </div>
   );
@@ -338,13 +364,30 @@ function renderSectionContent({
     const items = (skills || []).filter((s) => s && s.name);
     if (items.length === 0) return null;
     return (
-      <ul className="ml-5 list-disc text-[13.5px] text-gray-800 space-y-1">
+      <div className="space-y-3">
         {items.map((s, i) => (
-          <li key={i} data-marker={`skill-name-${i}`}>
-            {s.name}
-          </li>
+          <div
+            key={i}
+            className="grid grid-cols-[240px,1fr] gap-4 items-center"
+          >
+            <div className="flex items-center gap-3 text-[13px] text-gray-700">
+              <span className="inline-block w-[10px] h-[10px] rounded-sm bg-[#2f6cc6]" />
+              <span data-marker={`skill-name-${i}`}>{s.name}</span>
+            </div>
+            {s.level ? (
+              <div className="h-[8px] bg-gray-200 rounded">
+                <div
+                  className="h-full rounded bg-[#2f6cc6]"
+                  style={{ width: `${languagePercent(s.level)}%` }}
+                  data-marker={`skill-level-${i}`}
+                />
+              </div>
+            ) : (
+              <div className="h-[8px] bg-gray-100 rounded" />
+            )}
+          </div>
         ))}
-      </ul>
+      </div>
     );
   }
   if (key === "interests") {

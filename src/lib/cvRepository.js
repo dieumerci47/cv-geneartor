@@ -5,6 +5,33 @@ export async function upsertCv({ id, title, template, data }) {
   if (!auth?.user) throw new Error("Non authentifié");
   const userId = auth.user.id;
 
+  // Si photo est un blob/base64 (data URL), on l'upload dans le bucket et on remplace par l'URL publique
+  try {
+    const personal = data?.personal || {};
+    const photo = personal.photo;
+    if (photo && /^data:image\//.test(photo)) {
+      const fileName = `${userId}/${Date.now()}.png`;
+      const blob = await (await fetch(photo)).blob();
+      const { error: upErr } = await supabase.storage
+        .from("cv-photos")
+        .upload(fileName, blob, { upsert: true, cacheControl: "3600" });
+      if (!upErr) {
+        const { data: pub } = supabase.storage
+          .from("cv-photos")
+          .getPublicUrl(fileName);
+        if (pub?.publicUrl) {
+          data = {
+            ...data,
+            personal: { ...personal, photo: pub.publicUrl },
+          };
+        }
+      }
+    }
+  } catch (e) {
+    // On n'empêche pas la sauvegarde si l'upload échoue
+    console.warn("Upload photo échoué:", e);
+  }
+
   if (id) {
     const { data: rows, error } = await supabase
       .from("cvs")

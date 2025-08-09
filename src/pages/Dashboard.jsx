@@ -265,7 +265,11 @@ const Dashboard = () => {
                       variant="outline"
                       className="rounded-full transition-all duration-200 hover:shadow-md hover:-translate-y-0.5"
                     >
-                      <a href={`/editor?template=${cv.template ?? 0}`}>
+                      <a
+                        href={`/editor?template=${cv.template ?? 0}&cv=${
+                          cv.id
+                        }`}
+                      >
                         <Pencil className="w-4 h-4 mr-1" /> Modifier
                       </a>
                     </Button>
