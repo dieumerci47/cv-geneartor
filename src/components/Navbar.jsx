@@ -39,7 +39,7 @@ const Navbar = () => {
       <div className="flex items-center gap-3">
         <img src={logo} alt="Logo" className="h-9 w-9" />
         <span className="text-2xl font-bold text-blue-700 tracking-tight">
-          CV Generator
+          CVMarker
         </span>
       </div>
       <div>

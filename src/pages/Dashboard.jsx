@@ -13,6 +13,7 @@ import {
   Home,
 } from "lucide-react";
 import { getCv } from "@/lib/cvRepository";
+import { useToast } from "@/components/ui/toast";
 import Template1CV from "@/components/templates/Template1CV";
 import Template2CV from "@/components/templates/Template2CV";
 import Template3CV from "@/components/templates/Template3CV";
@@ -24,6 +25,7 @@ import { useReactToPrint } from "react-to-print";
 
 const Dashboard = () => {
   const [items, setItems] = useState([]);
+  const { add: addToast } = useToast();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [userName, setUserName] = useState("");
@@ -313,9 +315,18 @@ const Dashboard = () => {
                           setItems((prev) =>
                             prev.filter((x) => x.id !== cv.id)
                           );
+                          addToast({
+                            title: "CV supprimé",
+                            description: "Le CV a été supprimé avec succès.",
+                            variant: "success",
+                          });
                         } catch (e) {
-                          alert("Suppression impossible");
                           console.error(e);
+                          addToast({
+                            title: "Erreur",
+                            description: "Suppression impossible.",
+                            variant: "destructive",
+                          });
                         }
                       }}
                     >

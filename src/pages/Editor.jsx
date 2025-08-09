@@ -31,6 +31,7 @@ import Template2CV from "../components/templates/Template2CV";
 import Template3CV from "../components/templates/Template3CV";
 import Template4CV from "../components/templates/Template4CV";
 import SignatureModal from "@/components/SignatureModal";
+import { useToast } from "@/components/ui/toast";
 import { upsertCv, getCv } from "@/lib/cvRepository";
 
 const TEMPLATES = [
@@ -124,6 +125,7 @@ const Editor = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { add: addToast } = useToast();
   // Priorité : query param > state > 0
   let initialTemplate = 0;
   const queryTpl = searchParams.get("template");
@@ -653,9 +655,18 @@ const Editor = () => {
                       data: cvData,
                     });
                     setCvId(row.id);
+                    addToast({
+                      title: "CV enregistré",
+                      description: "Votre CV a été sauvegardé avec succès.",
+                      variant: "success",
+                    });
                   } catch (e) {
                     console.error(e);
-                    alert("Erreur lors de la sauvegarde");
+                    addToast({
+                      title: "Erreur",
+                      description: "Échec de la sauvegarde du CV.",
+                      variant: "destructive",
+                    });
                   } finally {
                     setSaving(false);
                   }

@@ -64,13 +64,16 @@ const Home = () => {
   return (
     <div className="min-h-screen flex flex-col justify-between bg-gradient-to-br from-[#e3e6f5] via-[#b3d0f7] to-[#eec6e6]">
       {/* Section d'accroche façon CVDesignR */}
-      <section className="w-full flex flex-col md:flex-row items-center justify-between px-6 md:px-20 pt-6 pb-8 gap-8">
+      <section
+        id="home"
+        className="w-full flex flex-col md:flex-row items-center justify-between px-6 md:px-20 pt-6 pb-8 gap-8"
+      >
         <div className="flex-1 max-w-xl text-left">
           <h1 className="text-4xl md:text-5xl font-extrabold mb-6 text-gray-900 leading-tight">
             Créez votre CV professionnel
             <br />
             en ligne gratuitement avec{" "}
-            <span className="text-blue-700">CV-Genarator</span>
+            <span className="text-blue-700">CVMarket</span>
           </h1>
           <p className="text-lg md:text-xl text-gray-700 mb-8">
             En quelques minutes, créez <b>votre CV gratuitement</b>, choisissez
@@ -91,17 +94,17 @@ const Home = () => {
       </section>
 
       {/* Section Exemples de CV - Hover only */}
-      <section className="w-full max-w-6xl mx-auto mb-20">
+      <section className="w-full max-w-6xl mx-auto mb-20 px-4" id="modeles">
         <h3 className="text-2xl font-bold text-blue-700 mb-8 text-center">
           Exemples de templates de CV
         </h3>
         <div className="relative flex flex-col items-center">
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 w-full pt-3">
+          <div className="w-full pt-3 flex flex-col md:flex-row md:items-stretch md:justify-between gap-6">
             {cvTemplates.map((tpl, idx) => (
               <div
                 key={idx}
-                className={`group transition-all duration-300 cursor-pointer rounded-2xl border-4 flex flex-col items-center p-0 aspect-[3/4] relative overflow-visible border-transparent shadow-md bg-white/80 hover:scale-105 hover:shadow-2xl hover:border-blue-500`}
-                style={{ minHeight: 320, maxWidth: 340 }}
+                className={`group transition-all duration-300 cursor-pointer rounded-2xl border-4 flex flex-col items-center p-0 aspect-[3/4] relative overflow-visible border-transparent shadow-md bg-white/80 hover:scale-105 hover:shadow-2xl hover:border-blue-500 flex-1`}
+                style={{ minHeight: 320, minWidth: 260, maxWidth: 420 }}
               >
                 {/* Badge type du CV, bien AU-DESSUS de la carte */}
                 {/*    <div
@@ -167,21 +170,157 @@ const Home = () => {
         </div>
       </section>
       {/* Footer moderne */}
-      <footer className="w-full bg-white/80 backdrop-blur border-t border-blue-100 py-6 mt-8">
-        <div className="max-w-4xl mx-auto flex flex-col md:flex-row items-center justify-between px-4 gap-2">
-          <span className="text-gray-500 text-sm">
-            © {new Date().getFullYear()} CV Generator. Hackathon project.
-          </span>
-          <div className="flex gap-4 text-gray-400 text-xs">
-            <a href="#" className="hover:text-blue-600 transition">
-              À propos
-            </a>
-            <a href="#" className="hover:text-blue-600 transition">
-              Contact
-            </a>
-            <a href="#" className="hover:text-blue-600 transition">
-              GitHub
-            </a>
+      <footer className="w-full bg-gradient-to-b from-blue-50 to-white backdrop-blur-lg border-t border-blue-100/50 py-8 mt-10">
+        <div className="max-w-6xl mx-auto px-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-center">
+            {/* Logo et description */}
+            <div className="flex flex-col space-y-2">
+              <div className="flex items-center space-x-2">
+                <div className="bg-blue-600 w-3 h-7 rounded-full"></div>
+                <span className="font-bold text-xl text-blue-800 tracking-tight">
+                  CVMarker
+                </span>
+              </div>
+              <p className="text-sm text-gray-500 max-w-xs">
+                Créateur de CV intelligents - Transformez votre parcours
+                professionnel en opportunités
+              </p>
+            </div>
+
+            {/* Navigation */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <h3 className="text-blue-800 font-semibold mb-3 text-sm uppercase tracking-wider">
+                  Navigation
+                </h3>
+                <ul className="space-y-2">
+                  <li>
+                    <a
+                      href="#home"
+                      className="text-gray-600 hover:text-blue-600 transition-colors text-sm"
+                    >
+                      Accueil
+                    </a>
+                  </li>
+                  <li>
+                    <a
+                      href="#modeles"
+                      className="text-gray-600 hover:text-blue-600 transition-colors text-sm"
+                    >
+                      Modèles
+                    </a>
+                  </li>
+                  <li>
+                    <a
+                      href="#"
+                      className="text-gray-600 hover:text-blue-600 transition-colors text-sm"
+                    >
+                      Exemples
+                    </a>
+                  </li>
+                </ul>
+              </div>
+              <div>
+                <h3 className="text-blue-800 font-semibold mb-3 text-sm uppercase tracking-wider">
+                  Légal
+                </h3>
+                <ul className="space-y-2">
+                  <li>
+                    <a
+                      href="#"
+                      className="text-gray-600 hover:text-blue-600 transition-colors text-sm"
+                    >
+                      Confidentialité
+                    </a>
+                  </li>
+                  <li>
+                    <a
+                      href="#"
+                      className="text-gray-600 hover:text-blue-600 transition-colors text-sm"
+                    >
+                      Conditions
+                    </a>
+                  </li>
+                  <li>
+                    <a
+                      href="#"
+                      className="text-gray-600 hover:text-blue-600 transition-colors text-sm"
+                    >
+                      Cookies
+                    </a>
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            {/* Contact et social */}
+            <div className="space-y-4">
+              <div>
+                <h3 className="text-blue-800 font-semibold mb-3 text-sm uppercase tracking-wider">
+                  Contact
+                </h3>
+                <p className="text-gray-600 text-sm">support@cvgenerator.fr</p>
+              </div>
+              <div className="flex space-x-4">
+                <a
+                  href="https://github.com/dieumerci47/cv-geneartor"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="bg-blue-100 p-2 rounded-lg hover:bg-blue-200 transition-colors group"
+                >
+                  <svg
+                    className="w-5 h-5 text-blue-600 group-hover:text-blue-800 transition-colors"
+                    fill="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      clipRule="evenodd"
+                      d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.866-.013-1.7-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"
+                    />
+                  </svg>
+                </a>
+                <a
+                  href="#"
+                  className="bg-blue-100 p-2 rounded-lg hover:bg-blue-200 transition-colors group"
+                >
+                  <svg
+                    className="w-5 h-5 text-blue-600 group-hover:text-blue-800 transition-colors"
+                    fill="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z" />
+                  </svg>
+                </a>
+              </div>
+            </div>
+          </div>
+
+          {/* Copyright et mentions */}
+          <div className="border-t border-blue-100/50 mt-8 pt-6 flex flex-col md:flex-row justify-between items-center">
+            <span className="text-gray-500 text-sm">
+              © {new Date().getFullYear()} CV Generator - Projet Hackathon
+            </span>
+            <div className="mt-4 md:mt-0 flex space-x-6">
+              <a
+                href="#"
+                className="text-gray-500 hover:text-blue-600 transition-colors text-xs"
+              >
+                Mentions légales
+              </a>
+              <a
+                href="#"
+                className="text-gray-500 hover:text-blue-600 transition-colors text-xs"
+              >
+                Accessibilité
+              </a>
+              <a
+                href="#"
+                className="text-gray-500 hover:text-blue-600 transition-colors text-xs"
+              >
+                Gestion des cookies
+              </a>
+            </div>
           </div>
         </div>
       </footer>
